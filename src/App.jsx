@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Upload, Trash2, Settings } from 'lucide-react';
+import JSZip from 'jszip';
 
 const AgenteGemini = () => {
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
@@ -35,24 +36,57 @@ const AgenteGemini = () => {
     }
   };
 
+  const extractPptxText = async (file) => {
+    const zip = await JSZip.loadAsync(file);
+    const slideFiles = Object.keys(zip.files)
+      .filter(name => /^ppt\/slides\/slide\d+\.xml$/.test(name))
+      .sort((a, b) => {
+        const numA = parseInt(a.match(/\d+/)[0]);
+        const numB = parseInt(b.match(/\d+/)[0]);
+        return numA - numB;
+      });
+
+    const texts = await Promise.all(
+      slideFiles.map(async (slideName) => {
+        const xml = await zip.files[slideName].async('string');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xml, 'text/xml');
+        const nodes = doc.querySelectorAll('t');
+        return Array.from(nodes)
+          .map(n => n.textContent)
+          .filter(t => t.trim())
+          .join(' ');
+      })
+    );
+
+    return texts.filter(t => t).join('\n\n');
+  };
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+    const newDocs = [];
+
     for (const file of files) {
       try {
-        const text = await file.text();
-        setDocuments([...documents, {
+        let content;
+        if (file.name.endsWith('.pptx')) {
+          content = await extractPptxText(file);
+        } else {
+          content = await file.text();
+        }
+        newDocs.push({
           id: Date.now() + Math.random(),
           name: file.name,
-          content: text,
+          content,
           type: file.type,
           size: file.size
-        }]);
+        });
       } catch (error) {
         console.error('Error leyendo archivo:', error);
       }
     }
-    
+
+    setDocuments([...documents, ...newDocs]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -70,7 +104,6 @@ const AgenteGemini = () => {
     setLoading(true);
     
     try {
-      // Preparar el contexto con los documentos
       let context = '';
       if (documents.length > 0) {
         context = `\n\n**DOCUMENTOS DISPONIBLES:**\n`;
@@ -82,25 +115,13 @@ const AgenteGemini = () => {
 
       const fullPrompt = userMessage + context;
 
-      // Llamar a Gemini API con búsqueda web habilitada
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: fullPrompt
-            }]
-          }],
-          tools: [{
-            googleSearch: {}
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000
-          }
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          tools: [{ googleSearch: {} }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
         })
       });
 
@@ -110,19 +131,12 @@ const AgenteGemini = () => {
         throw new Error(data.error?.message || 'Error en la API');
       }
 
-      // Extraer la respuesta
       let botResponse = '';
       if (data.candidates && data.candidates[0]) {
         const candidate = data.candidates[0];
-        
-        // Procesar partes de contenido
         if (candidate.content && candidate.content.parts) {
-          botResponse = candidate.content.parts
-            .map(part => part.text || '')
-            .join('');
+          botResponse = candidate.content.parts.map(part => part.text || '').join('');
         }
-
-        // Procesar búsquedas web si las hay
         if (candidate.groundingMetadata && candidate.groundingMetadata.searchEntryPoint) {
           botResponse += '\n\n*Búsqueda realizada en internet para información actualizada*';
         }
@@ -157,7 +171,6 @@ const AgenteGemini = () => {
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-      {/* Panel de documentos */}
       <div className="w-72 border-r border-slate-700 bg-slate-900/50 flex flex-col overflow-hidden">
         <div className="p-6 border-b border-slate-700">
           <h1 className="text-xl font-bold text-white mb-1" style={{ fontFamily: 'Georgia, serif' }}>
@@ -166,7 +179,6 @@ const AgenteGemini = () => {
           <p className="text-xs text-slate-400">con búsqueda web</p>
         </div>
 
-        {/* Documentos */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
             <p className="text-xs font-semibold text-slate-300 uppercase mb-3 tracking-wide">
@@ -182,10 +194,7 @@ const AgenteGemini = () => {
                       <p className="text-xs font-medium text-slate-200 truncate">{doc.name}</p>
                       <p className="text-xs text-slate-500">{(doc.size / 1024).toFixed(1)} KB</p>
                     </div>
-                    <button
-                      onClick={() => deleteDocument(doc.id)}
-                      className="ml-2 p-1 text-slate-500 hover:text-red-400 transition"
-                    >
+                    <button onClick={() => deleteDocument(doc.id)} className="ml-2 p-1 text-slate-500 hover:text-red-400 transition">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -195,7 +204,6 @@ const AgenteGemini = () => {
           </div>
         </div>
 
-        {/* Botones */}
         <div className="p-4 space-y-3 border-t border-slate-700">
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -212,10 +220,7 @@ const AgenteGemini = () => {
             API Key
           </button>
           <button
-            onClick={() => {
-              setMessages([]);
-              localStorage.removeItem('agente_messages');
-            }}
+            onClick={() => { setMessages([]); localStorage.removeItem('agente_messages'); }}
             className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-sm font-medium transition"
           >
             Limpiar chat
@@ -228,13 +233,11 @@ const AgenteGemini = () => {
           multiple
           onChange={handleFileUpload}
           className="hidden"
-          accept=".txt,.pdf,.md,.json"
+          accept=".txt,.pdf,.md,.json,.pptx"
         />
       </div>
 
-      {/* Chat */}
       <div className="flex-1 flex flex-col">
-        {/* Mensajes */}
         <div className="flex-1 overflow-y-auto p-8">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
@@ -250,20 +253,13 @@ const AgenteGemini = () => {
           ) : (
             <div className="space-y-6 max-w-3xl">
               {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-lg px-4 py-3 rounded-lg ${
-                      msg.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-none'
-                        : 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-lg px-4 py-3 rounded-lg ${
+                    msg.role === 'user'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-none'
+                      : 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700'
+                  }`}>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                   </div>
                 </div>
               ))}
@@ -283,7 +279,6 @@ const AgenteGemini = () => {
           )}
         </div>
 
-        {/* Input */}
         <div className="border-t border-slate-700 bg-slate-900/50 p-6">
           <form onSubmit={handleSubmit} className="max-w-3xl flex gap-3">
             <input
@@ -305,7 +300,6 @@ const AgenteGemini = () => {
         </div>
       </div>
 
-      {/* Modal API Key */}
       {showApiModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-900 p-8 rounded-xl border border-slate-700 max-w-md w-full mx-4">
@@ -314,12 +308,7 @@ const AgenteGemini = () => {
             </h2>
             <p className="text-sm text-slate-300 mb-4">
               Necesitas una API Key de Google. Obtenla gratis en{' '}
-              <a
-                href="https://ai.google.dev/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
+              <a href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
                 ai.google.dev
               </a>
             </p>
@@ -331,10 +320,7 @@ const AgenteGemini = () => {
                 placeholder="Pega tu API Key aquí"
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 mb-4"
               />
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium transition"
-              >
+              <button type="submit" className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium transition">
                 Guardar API Key
               </button>
             </form>
