@@ -5,409 +5,596 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Novedades Padrón de Habitantes – v10.0.3.38.0</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; }
 
-  /* ── Slide container ─────────────────────────────────────── */
-  #app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-  .slide { width: 100%; height: 100%; display: none; flex-direction: column; }
-  .slide.active { display: flex; }
+/* ── Variables ── */
+:root {
+  --azul:        #003F7D;
+  --azul-medio:  #005BAA;
+  --azul-claro:  #EAF1F8;
+  --verde:       #5CB85C;
+  --verde-claro: #EAF6EA;
+  --gris-texto:  #333333;
+  --gris-medio:  #666666;
+  --gris-borde:  #C8D8E8;
+  --blanco:      #FFFFFF;
+}
 
-  /* ── Shared layout ───────────────────────────────────────── */
-  .topbar {
-    background: #005baa; padding: 0 40px; height: 52px;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  .topbar-brand { color: #fff; font-weight: 800; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; }
-  .topbar-label { color: rgba(255,255,255,.72); font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
-  .footer {
-    background: #003d7a; color: rgba(255,255,255,.5); font-size: 11px;
-    padding: 7px 32px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
-  }
-  .body { flex: 1; overflow: hidden; padding: 36px 56px; display: flex; flex-direction: column; gap: 22px; }
+/* ── Slides ── */
+.slide { width: 100vw; height: 100vh; display: none; flex-direction: column; background: var(--blanco); }
+.slide.active { display: flex; }
 
-  /* ── Portada ─────────────────────────────────────────────── */
-  #slide-0 {
-    background: linear-gradient(135deg, #003d7a 0%, #005baa 60%, #0077cc 100%);
-    position: relative; overflow: hidden;
-  }
-  .cover-circle-1 { position: absolute; right: -80px; top: -80px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,.06); }
-  .cover-circle-2 { position: absolute; right: 60px; bottom: -60px; width: 280px; height: 280px; border-radius: 50%; background: rgba(255,255,255,.04); }
-  .cover-circle-3 { position: absolute; left: -40px; bottom: 80px; width: 200px; height: 200px; border-radius: 50%; background: rgba(0,166,81,.18); }
-  .cover-logo { padding: 24px 48px; display: flex; align-items: center; gap: 12px; position: relative; }
-  .cover-logo-bar { background: #00a651; width: 8px; height: 36px; border-radius: 4px; }
-  .cover-logo-text { color: #fff; font-weight: 800; font-size: 22px; letter-spacing: .04em; }
-  .cover-logo-sub { color: rgba(255,255,255,.5); font-size: 13px; margin-left: 4px; padding-top: 4px; }
-  .cover-main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 64px; position: relative; }
-  .cover-badge {
-    display: inline-flex; align-items: center; background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.2); border-radius: 20px; padding: 4px 16px;
-    margin-bottom: 28px; width: fit-content;
-  }
-  .cover-badge-dot { color: #00a651; margin-right: 8px; font-size: 10px; }
-  .cover-badge-text { color: rgba(255,255,255,.85); font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
-  .cover-title { color: #fff; font-size: 46px; font-weight: 800; line-height: 1.1; margin-bottom: 16px; max-width: 720px; }
-  .cover-divider { width: 60px; height: 4px; background: #00a651; border-radius: 2px; margin-bottom: 24px; }
-  .cover-subtitle { color: rgba(255,255,255,.75); font-size: 18px; line-height: 1.5; max-width: 600px; margin-bottom: 40px; }
-  .cover-version {
-    display: inline-flex; align-items: center; background: rgba(0,166,81,.2);
-    border: 1px solid rgba(0,166,81,.4); border-radius: 8px; padding: 8px 20px; width: fit-content;
-  }
-  .cover-version span { color: #00a651; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
-  .cover-hint { padding: 20px 48px; color: rgba(255,255,255,.35); font-size: 11px; position: relative; }
+/* ── Cabecera estilo Gestiona ── */
+.header-gestiona {
+  background: var(--azul);
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+  flex-shrink: 0;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 10px;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+.logo-icono {
+  width: 34px; height: 34px; background: var(--verde);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icono svg { width: 20px; height: 20px; fill: white; }
+.logo-texto { color: white; font-size: 18px; font-weight: 700; letter-spacing: 0.03em; }
+.header-titulo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  color: rgba(255,255,255,0.88);
+  font-size: 14px;
+  font-weight: 400;
+}
+.header-version {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
 
-  /* ── Introducción ─────────────────────────────────────────── */
-  .intro-header { display: flex; align-items: center; gap: 12px; }
-  .intro-accent { width: 6px; height: 36px; background: #00a651; border-radius: 3px; flex-shrink: 0; }
-  .intro-title { color: #005baa; font-size: 30px; font-weight: 700; }
-  .intro-text {
-    color: #1a1a2e; font-size: 17px; line-height: 1.75; max-width: 820px;
-    padding: 20px 24px; background: #e8f1fb; border-left: 4px solid #005baa; border-radius: 0 8px 8px 0;
-  }
-  .intro-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; flex: 1; }
-  .intro-card {
-    background: #f0f4fa; border: 1px solid #d0dcea; border-radius: 10px;
-    padding: 16px; display: flex; flex-direction: column; gap: 8px;
-  }
-  .intro-card-num { font-size: 22px; font-weight: 800; color: #005baa; opacity: .6; }
-  .intro-card-title { font-size: 12px; color: #1a1a2e; font-weight: 600; line-height: 1.4; }
-  .intro-footer { border-top: 1px solid #d0dcea; padding-top: 14px; color: #5a6a7a; font-size: 12px; }
+/* ── Pie de página ── */
+.footer-gestiona {
+  background: var(--azul-claro);
+  border-top: 2px solid var(--gris-borde);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.footer-left { color: var(--azul); font-size: 11px; font-weight: 600; }
+.footer-right { color: var(--gris-medio); font-size: 11px; }
 
-  /* ── Feature slides ───────────────────────────────────────── */
-  .feat-header { display: flex; align-items: flex-start; gap: 20px; }
-  .feat-num {
-    background: #003d7a; color: #fff; width: 52px; height: 52px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; font-weight: 800; flex-shrink: 0;
-  }
-  .feat-header-right { display: flex; flex-direction: column; gap: 8px; }
-  .tag {
-    display: inline-block; padding: 3px 12px; border-radius: 12px;
-    font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-    width: fit-content;
-  }
-  .tag-blue { background: #dbeafe; color: #1e40af; }
-  .tag-green { background: #d1fae5; color: #065f46; }
-  .feat-title { color: #005baa; font-size: 26px; font-weight: 700; line-height: 1.25; }
-  .feat-divider { height: 2px; background: #e8f1fb; flex-shrink: 0; }
-  .feat-body { color: #1a1a2e; font-size: 16px; line-height: 1.7; }
-  .feat-cards { display: flex; flex-direction: column; gap: 12px; flex: 1; }
-  .feat-card {
-    background: #f0f4fa; border: 1px solid #d0dcea; border-radius: 10px;
-    padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px;
-  }
-  .feat-card-icon { color: #005baa; font-size: 10px; margin-top: 5px; flex-shrink: 0; }
-  .feat-card-label { display: block; font-weight: 700; color: #005baa; font-size: 13px; margin-bottom: 4px; }
-  .feat-card-text { color: #1a1a2e; font-size: 14px; line-height: 1.5; }
-  .feat-note {
-    background: #e6f7ef; border: 1px solid rgba(0,166,81,.3); border-left: 4px solid #00a651;
-    border-radius: 0 8px 8px 0; padding: 12px 16px; color: #065f46; font-size: 13px; line-height: 1.55;
-  }
+/* ── Cuerpo genérico ── */
+.cuerpo {
+  flex: 1;
+  overflow: hidden;
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-  /* ── Cierre ──────────────────────────────────────────────── */
-  #slide-7 {
-    background: linear-gradient(160deg, #003d7a 0%, #005baa 100%);
-    align-items: center; justify-content: center; position: relative; overflow: hidden;
-  }
-  .closing-c1 { position: absolute; left: -100px; top: -100px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,.04); }
-  .closing-c2 { position: absolute; right: -60px; bottom: -60px; width: 300px; height: 300px; border-radius: 50%; background: rgba(0,166,81,.12); }
-  .closing-inner { display: flex; flex-direction: column; align-items: center; position: relative; }
-  .closing-divider { width: 64px; height: 4px; background: #00a651; border-radius: 2px; margin-bottom: 32px; }
-  .closing-title { color: #fff; font-size: 42px; font-weight: 800; margin-bottom: 16px; text-align: center; }
-  .closing-sub { color: rgba(255,255,255,.65); font-size: 16px; text-align: center; max-width: 480px; line-height: 1.6; margin-bottom: 48px; }
-  .closing-tags { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 680px; }
-  .closing-tag {
-    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
-    border-radius: 8px; padding: 6px 14px; display: flex; align-items: center; gap: 8px;
-  }
-  .closing-tag-num { color: #00a651; font-size: 11px; font-weight: 700; }
-  .closing-tag-text { color: rgba(255,255,255,.75); font-size: 11px; }
+/* ── Título de sección ── */
+.seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 2px solid var(--gris-borde);
+  padding-bottom: 14px;
+}
+.seccion-barra { width: 5px; height: 32px; background: var(--verde); border-radius: 3px; flex-shrink: 0; }
+.seccion-h { color: var(--azul); font-size: 22px; font-weight: 700; }
 
-  /* ── Navigation ──────────────────────────────────────────── */
-  #nav-btns {
-    position: fixed; bottom: 44px; right: 20px;
-    display: flex; align-items: center; gap: 6px; z-index: 200;
-  }
-  .nav-btn {
-    background: rgba(0,61,122,.88); border: none; border-radius: 8px;
-    color: #fff; width: 34px; height: 34px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; transition: opacity .15s;
-  }
-  .nav-btn:disabled { opacity: .28; cursor: default; }
-  .nav-btn:not(:disabled):hover { background: rgba(0,61,122,1); }
+/* ── Texto introductorio ── */
+.intro-parrafo {
+  color: var(--gris-texto);
+  font-size: 15px;
+  line-height: 1.75;
+  background: var(--azul-claro);
+  border-left: 4px solid var(--azul-medio);
+  padding: 16px 20px;
+  border-radius: 0 6px 6px 0;
+}
 
-  #dots {
-    position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 6px; align-items: center; z-index: 200;
-  }
-  .dot {
-    height: 8px; border-radius: 4px; background: #d0dcea; border: none;
-    cursor: pointer; transition: all .2s ease; padding: 0;
-  }
-  .dot.active { background: #005baa; }
+/* ── Tarjetas de índice ── */
+.indice-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; flex: 1; align-content: start; }
+.indice-card {
+  background: var(--blanco);
+  border: 1px solid var(--gris-borde);
+  border-top: 3px solid var(--azul);
+  border-radius: 4px;
+  padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.indice-num { font-size: 24px; font-weight: 800; color: var(--azul); opacity: 0.5; line-height: 1; }
+.indice-desc { font-size: 11px; color: var(--gris-texto); font-weight: 600; line-height: 1.45; }
+
+/* ── Feature slides ── */
+.feat-encabezado {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.feat-burbuja {
+  background: var(--azul);
+  color: white;
+  width: 48px; height: 48px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800;
+  flex-shrink: 0;
+}
+.feat-encabezado-derecha { display: flex; flex-direction: column; gap: 6px; }
+.etiqueta {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+.etiqueta-azul  { background: var(--azul-claro); color: var(--azul); border: 1px solid #B0C8E0; }
+.etiqueta-verde { background: var(--verde-claro); color: #2d7a2d;    border: 1px solid #B0D8B0; }
+.feat-h { color: var(--azul); font-size: 22px; font-weight: 700; line-height: 1.25; }
+.divisor { height: 1px; background: var(--gris-borde); flex-shrink: 0; }
+.feat-parrafo { color: var(--gris-texto); font-size: 15px; line-height: 1.7; }
+
+/* ── Tarjetas de detalle ── */
+.feat-tarjetas { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.tarjeta-detalle {
+  background: var(--azul-claro);
+  border: 1px solid var(--gris-borde);
+  border-left: 4px solid var(--azul-medio);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.tarjeta-icono { color: var(--azul-medio); font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+.tarjeta-label { display: block; font-weight: 700; color: var(--azul); font-size: 13px; margin-bottom: 3px; }
+.tarjeta-texto { color: var(--gris-texto); font-size: 13px; line-height: 1.55; }
+
+/* ── Nota ── */
+.nota {
+  background: var(--verde-claro);
+  border: 1px solid #B0D8B0;
+  border-left: 4px solid var(--verde);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 16px;
+  color: #2d5a2d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ── Portada ── */
+#slide-portada {
+  background: linear-gradient(150deg, var(--azul) 0%, #005BAA 55%, #0072CC 100%);
+  position: relative; overflow: hidden;
+}
+.portada-deco1 { position: absolute; right: -100px; top: -100px; width: 450px; height: 450px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+.portada-deco2 { position: absolute; right: 80px; bottom: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+.portada-deco3 { position: absolute; left: -60px; bottom: 60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(92,184,92,0.15); }
+.portada-header {
+  padding: 24px 48px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative;
+}
+.portada-logo-bar { background: var(--verde); width: 7px; height: 38px; border-radius: 4px; }
+.portada-logo-text { color: white; font-size: 24px; font-weight: 800; letter-spacing: 0.03em; }
+.portada-logo-sub { color: rgba(255,255,255,0.5); font-size: 14px; padding-top: 5px; margin-left: 4px; }
+.portada-main {
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 72px;
+  position: relative;
+}
+.portada-seminario {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 16px; padding: 4px 16px; margin-bottom: 28px; width: fit-content;
+}
+.portada-seminario-dot { color: var(--verde); font-size: 9px; }
+.portada-seminario-text { color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.portada-titulo { color: white; font-size: 42px; font-weight: 800; line-height: 1.1; max-width: 700px; margin-bottom: 14px; }
+.portada-raya { width: 56px; height: 4px; background: var(--verde); border-radius: 2px; margin-bottom: 22px; }
+.portada-subtitulo { color: rgba(255,255,255,0.75); font-size: 17px; line-height: 1.6; max-width: 580px; margin-bottom: 36px; }
+.portada-version {
+  display: inline-flex; align-items: center;
+  background: rgba(92,184,92,0.2); border: 1px solid rgba(92,184,92,0.45);
+  border-radius: 6px; padding: 8px 20px; width: fit-content;
+}
+.portada-version span { color: #8be08b; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+.portada-hint { padding: 18px 48px; color: rgba(255,255,255,0.3); font-size: 11px; position: relative; }
+
+/* ── Cierre ── */
+#slide-cierre {
+  background: linear-gradient(150deg, var(--azul) 0%, #005BAA 100%);
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.cierre-deco1 { position: absolute; left: -100px; top: -100px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+.cierre-deco2 { position: absolute; right: -60px; bottom: -60px; width: 300px; height: 300px; border-radius: 50%; background: rgba(92,184,92,0.1); }
+.cierre-inner { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 40px; }
+.cierre-raya { width: 56px; height: 4px; background: var(--verde); border-radius: 2px; margin-bottom: 28px; }
+.cierre-titulo { color: white; font-size: 44px; font-weight: 800; margin-bottom: 14px; text-align: center; }
+.cierre-sub { color: rgba(255,255,255,0.65); font-size: 16px; text-align: center; line-height: 1.7; margin-bottom: 44px; }
+.cierre-chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 700px; }
+.cierre-chip {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px; padding: 7px 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.cierre-chip-num { color: var(--verde); font-size: 11px; font-weight: 700; }
+.cierre-chip-text { color: rgba(255,255,255,0.78); font-size: 11px; }
+
+/* ── Navegación ── */
+#nav-btns {
+  position: fixed; bottom: 40px; right: 18px;
+  display: flex; align-items: center; gap: 6px; z-index: 500;
+}
+.nav-btn {
+  background: rgba(0,63,125,0.9);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: white; width: 34px; height: 34px;
+  cursor: pointer; font-size: 18px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.nav-btn:not([disabled]):hover { background: var(--azul-medio); }
+.nav-btn[disabled] { opacity: 0.3; cursor: default; }
+
+#dots {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; align-items: center; z-index: 500;
+}
+.dot {
+  height: 8px; border-radius: 4px; border: none;
+  background: rgba(0,63,125,0.25); cursor: pointer;
+  transition: all 0.2s ease; padding: 0;
+}
+.dot.active { background: var(--azul); }
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- ── 0: PORTADA ─────────────────────────────────────── -->
-  <div class="slide active" id="slide-0">
-    <div class="cover-circle-1"></div>
-    <div class="cover-circle-2"></div>
-    <div class="cover-circle-3"></div>
-    <div class="cover-logo">
-      <div class="cover-logo-bar"></div>
-      <span class="cover-logo-text">Gestiona</span>
-      <span class="cover-logo-sub">· Padrón de Habitantes</span>
-    </div>
-    <div class="cover-main">
-      <div class="cover-badge">
-        <span class="cover-badge-dot">●</span>
-        <span class="cover-badge-text">Seminario · Junio 2026</span>
-      </div>
-      <h1 class="cover-title">Novedades de Padrón de Habitantes</h1>
-      <div class="cover-divider"></div>
-      <p class="cover-subtitle">Resumen funcional de mejoras e incidencias corregidas incluidas en la versión de junio de 2026.</p>
-      <div class="cover-version"><span>Versión 10.0.3.38.0</span></div>
-    </div>
-    <div class="cover-hint">1 / 8 · Usa las flechas del teclado o los botones para navegar</div>
+<!-- ── 0: PORTADA ──────────────────────────────────── -->
+<div class="slide active" id="slide-portada">
+  <div class="portada-deco1"></div>
+  <div class="portada-deco2"></div>
+  <div class="portada-deco3"></div>
+  <div class="portada-header">
+    <div class="portada-logo-bar"></div>
+    <span class="portada-logo-text">gestiona</span>
+    <span class="portada-logo-sub">· Padrón de Habitantes</span>
   </div>
-
-  <!-- ── 1: INTRODUCCIÓN ───────────────────────────────── -->
-  <div class="slide" id="slide-1">
-    <div class="topbar">
-      <span class="topbar-brand">Gestiona</span>
-      <span class="topbar-label">Introducción</span>
+  <div class="portada-main">
+    <div class="portada-seminario">
+      <span class="portada-seminario-dot">●</span>
+      <span class="portada-seminario-text">Seminario · Junio 2026</span>
     </div>
-    <div class="body">
-      <div class="intro-header">
-        <div class="intro-accent"></div>
-        <h2 class="intro-title">Introducción</h2>
-      </div>
-      <p class="intro-text">Esta versión incorpora mejoras orientadas a reforzar la gestión de habitantes, facilitar determinadas operaciones sin generar movimientos innecesarios, preparar funcionalidades relacionadas con certificados y mejorar la usabilidad y resolución de incidencias en la integración con INE.</p>
-      <div class="intro-grid">
-        <div class="intro-card"><div class="intro-card-num">01</div><div class="intro-card-title">Identificación de habitantes bajo expediente de baja</div></div>
-        <div class="intro-card"><div class="intro-card-num">02</div><div class="intro-card-title">Modificación de datos adicionales sin generar movimiento</div></div>
-        <div class="intro-card"><div class="intro-card-num">03</div><div class="intro-card-title">Recuperación de hoja padronal antigua</div></div>
-        <div class="intro-card"><div class="intro-card-num">04</div><div class="intro-card-title">Modificación de extremos de un tramo de numeración</div></div>
-        <div class="intro-card"><div class="intro-card-num">05</div><div class="intro-card-title">Mejora de usabilidad en gestión de errores INE</div></div>
-      </div>
-      <div class="intro-footer">5 nuevas funcionalidades · Versión 10.0.3.38.0 · Junio 2026</div>
-    </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
+    <h1 class="portada-titulo">Novedades de Padrón de Habitantes</h1>
+    <div class="portada-raya"></div>
+    <p class="portada-subtitulo">Resumen funcional de mejoras e incidencias corregidas incluidas en la versión de junio de 2026.</p>
+    <div class="portada-version"><span>Versión 10.0.3.38.0</span></div>
   </div>
+  <div class="portada-hint">Usa las flechas del teclado o los botones para navegar</div>
+</div>
 
-  <!-- ── 2: FUNCIONALIDAD 01 ───────────────────────────── -->
-  <div class="slide" id="slide-2">
-    <div class="topbar"><span class="topbar-brand">Gestiona</span><span class="topbar-label">Funcionalidad 01</span></div>
-    <div class="body">
-      <div class="feat-header">
-        <div class="feat-num">01</div>
-        <div class="feat-header-right">
-          <span class="tag tag-blue">Control y seguimiento</span>
-          <h2 class="feat-title">Identificación de habitantes bajo expediente de baja</h2>
-        </div>
+<!-- ── 1: INTRODUCCIÓN ────────────────────────────── -->
+<div class="slide" id="slide-intro">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
       </div>
-      <div class="feat-divider"></div>
-      <p class="feat-body">Se incorpora una funcionalidad para identificar a los habitantes que se encuentran en proceso de baja, como primer paso para su control en la futura generación de certificados.</p>
-      <div class="feat-cards">
-        <div class="feat-card">
-          <span class="feat-card-icon">●</span>
-          <div><span class="feat-card-label">Marca directa en la ficha</span><span class="feat-card-text">Indicador específico en la ficha del habitante con el indicador correspondiente.</span></div>
-        </div>
-        <div class="feat-card">
-          <span class="feat-card-icon">●</span>
-          <div><span class="feat-card-label">Vía procedimiento</span><span class="feat-card-text">El habitante está incluido en un procedimiento cuya actividad asociada sea "Padrón de habitantes (baja)".</span></div>
-        </div>
-      </div>
-      <div class="feat-note"><strong>Nota: </strong>Ambos mecanismos conviven en el sistema y basta con que se cumpla uno de ellos para que el habitante quede identificado con ese estado.</div>
+      <span class="logo-texto">gestiona</span>
     </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
+    <div class="header-titulo">Padrón de Habitantes · Novedades v10.0.3.38.0</div>
+    <div class="header-version">Junio 2026</div>
   </div>
-
-  <!-- ── 3: FUNCIONALIDAD 02 ───────────────────────────── -->
-  <div class="slide" id="slide-3">
-    <div class="topbar"><span class="topbar-brand">Gestiona</span><span class="topbar-label">Funcionalidad 02</span></div>
-    <div class="body">
-      <div class="feat-header">
-        <div class="feat-num">02</div>
-        <div class="feat-header-right">
-          <span class="tag tag-green">Operativa</span>
-          <h2 class="feat-title">Modificación de datos adicionales sin generar movimiento</h2>
-        </div>
-      </div>
-      <div class="feat-divider"></div>
-      <p class="feat-body">Se añade una nueva acción que permite modificar determinados datos adicionales del habitante sin crear un movimiento de modificación de datos personales.</p>
-      <div class="feat-cards">
-        <div class="feat-card">
-          <span class="feat-card-icon">◆</span>
-          <div><span class="feat-card-label">Campos incluidos en esta acción</span><span class="feat-card-text">Autoriza &nbsp;·&nbsp; Habitante bajo expediente de baja &nbsp;·&nbsp; Observaciones</span></div>
-        </div>
-      </div>
-      <div class="feat-note"><strong>Beneficio: </strong>Evita movimientos innecesarios en el historial del habitante al actualizar información auxiliar.</div>
+  <div class="cuerpo">
+    <div class="seccion-titulo">
+      <div class="seccion-barra"></div>
+      <h2 class="seccion-h">Introducción</h2>
     </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
+    <p class="intro-parrafo">Esta versión incorpora mejoras orientadas a reforzar la gestión de habitantes, facilitar determinadas operaciones sin generar movimientos innecesarios, preparar funcionalidades relacionadas con certificados y mejorar la usabilidad y resolución de incidencias en la integración con INE.</p>
+    <div class="indice-grid">
+      <div class="indice-card"><div class="indice-num">01</div><div class="indice-desc">Identificación de habitantes bajo expediente de baja</div></div>
+      <div class="indice-card"><div class="indice-num">02</div><div class="indice-desc">Modificación de datos adicionales sin generar movimiento</div></div>
+      <div class="indice-card"><div class="indice-num">03</div><div class="indice-desc">Recuperación de hoja padronal antigua</div></div>
+      <div class="indice-card"><div class="indice-num">04</div><div class="indice-desc">Modificación de extremos de un tramo de numeración</div></div>
+      <div class="indice-card"><div class="indice-num">05</div><div class="indice-desc">Mejora de usabilidad en gestión de errores INE</div></div>
+    </div>
   </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
 
-  <!-- ── 4: FUNCIONALIDAD 03 ───────────────────────────── -->
-  <div class="slide" id="slide-4">
-    <div class="topbar"><span class="topbar-brand">Gestiona</span><span class="topbar-label">Funcionalidad 03</span></div>
-    <div class="body">
-      <div class="feat-header">
-        <div class="feat-num">03</div>
-        <div class="feat-header-right">
-          <span class="tag tag-blue">Certificados</span>
-          <h2 class="feat-title">Recuperación de hoja padronal antigua</h2>
-        </div>
-      </div>
-      <div class="feat-divider"></div>
-      <p class="feat-body">Primer paso para permitir la obtención de certificados a partir de una hoja padronal antigua, especialmente en situaciones en las que existían de forma indebida varias hojas padronales por vivienda.</p>
-      <div class="feat-cards">
-        <div class="feat-card">
-          <span class="feat-card-icon">▶</span>
-          <div><span class="feat-card-label">En esta versión</span><span class="feat-card-text">El dato NHOP que figuraba en observaciones para algunos habitantes migrados se traslada al nuevo campo "Hoja Padronal Antigua".</span></div>
-        </div>
-        <div class="feat-card">
-          <span class="feat-card-icon">▶</span>
-          <div><span class="feat-card-label">Versión posterior</span><span class="feat-card-text">Se prevé emitir certificados indicando directamente ese número de hoja padronal antigua.</span></div>
-        </div>
+<!-- ── 2: FUNCIONALIDAD 01 ───────────────────────── -->
+<div class="slide" id="slide-f01">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+      <span class="logo-texto">gestiona</span>
+    </div>
+    <div class="header-titulo">Funcionalidad 01 de 05</div>
+    <div class="header-version">v10.0.3.38.0</div>
+  </div>
+  <div class="cuerpo">
+    <div class="feat-encabezado">
+      <div class="feat-burbuja">01</div>
+      <div class="feat-encabezado-derecha">
+        <span class="etiqueta etiqueta-azul">Control y seguimiento</span>
+        <h2 class="feat-h">Identificación de habitantes bajo expediente de baja</h2>
       </div>
     </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
-  </div>
-
-  <!-- ── 5: FUNCIONALIDAD 04 ───────────────────────────── -->
-  <div class="slide" id="slide-5">
-    <div class="topbar"><span class="topbar-brand">Gestiona</span><span class="topbar-label">Funcionalidad 04</span></div>
-    <div class="body">
-      <div class="feat-header">
-        <div class="feat-num">04</div>
-        <div class="feat-header-right">
-          <span class="tag tag-green">Datos territoriales</span>
-          <h2 class="feat-title">Modificación de extremos de un tramo de numeración</h2>
-        </div>
+    <div class="divisor"></div>
+    <p class="feat-parrafo">Se incorpora una funcionalidad para identificar a los habitantes que se encuentran en proceso de baja, como primer paso para su control en la futura generación de certificados.</p>
+    <div class="feat-tarjetas">
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Marca directa en la ficha</span><span class="tarjeta-texto">Indicador específico en la ficha del habitante con el campo correspondiente activado.</span></div>
       </div>
-      <div class="feat-divider"></div>
-      <p class="feat-body">Se incorpora una acción específica para modificar el extremo inferior y/o superior de un tramo de numeración sin provocar un movimiento de modificación de datos territoriales sobre los habitantes empadronados en dicho tramo.</p>
-      <div class="feat-cards">
-        <div class="feat-card">
-          <span class="feat-card-icon">◆</span>
-          <div><span class="feat-card-label">Beneficio clave</span><span class="feat-card-text">Los cambios en tramos de numeración ya no generan movimientos innecesarios sobre los habitantes afectados por ese tramo.</span></div>
-        </div>
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Vía procedimiento</span><span class="tarjeta-texto">El habitante está incluido en un procedimiento cuya actividad asociada sea <em>"Padrón de habitantes (baja)"</em>.</span></div>
       </div>
     </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
+    <div class="nota"><strong>Nota: </strong>Ambos mecanismos conviven en el sistema. Basta con que se cumpla uno de ellos para que el habitante quede identificado con ese estado.</div>
   </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
 
-  <!-- ── 6: FUNCIONALIDAD 05 ───────────────────────────── -->
-  <div class="slide" id="slide-6">
-    <div class="topbar"><span class="topbar-brand">Gestiona</span><span class="topbar-label">Funcionalidad 05</span></div>
-    <div class="body">
-      <div class="feat-header">
-        <div class="feat-num">05</div>
-        <div class="feat-header-right">
-          <span class="tag tag-blue">INE / Usabilidad</span>
-          <h2 class="feat-title">Mejora de usabilidad en gestión de errores INE</h2>
-        </div>
-      </div>
-      <div class="feat-divider"></div>
-      <p class="feat-body">Se mejora la usabilidad del módulo de gestión de errores mediante un código de colores que permite identificar visualmente el estado de cada error de forma más rápida e intuitiva.</p>
-      <div class="feat-cards">
-        <div class="feat-card">
-          <span class="feat-card-icon">●</span>
-          <div><span class="feat-card-label">Código de colores</span><span class="feat-card-text">Identificación visual inmediata del estado de cada error INE sin necesidad de abrir el detalle.</span></div>
-        </div>
-        <div class="feat-card">
-          <span class="feat-card-icon">●</span>
-          <div><span class="feat-card-label">Objetivo</span><span class="feat-card-text">Reducir el tiempo de revisión y mejorar la detección de incidencias pendientes de resolver.</span></div>
-        </div>
+<!-- ── 3: FUNCIONALIDAD 02 ───────────────────────── -->
+<div class="slide" id="slide-f02">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+      <span class="logo-texto">gestiona</span>
+    </div>
+    <div class="header-titulo">Funcionalidad 02 de 05</div>
+    <div class="header-version">v10.0.3.38.0</div>
+  </div>
+  <div class="cuerpo">
+    <div class="feat-encabezado">
+      <div class="feat-burbuja">02</div>
+      <div class="feat-encabezado-derecha">
+        <span class="etiqueta etiqueta-verde">Operativa</span>
+        <h2 class="feat-h">Modificación de datos adicionales sin generar movimiento</h2>
       </div>
     </div>
-    <div class="footer"><span>Novedades Padrón de Habitantes · v10.0.3.38.0</span><span class="slide-counter"></span></div>
+    <div class="divisor"></div>
+    <p class="feat-parrafo">Se añade una nueva acción que permite modificar determinados datos adicionales del habitante sin crear un movimiento de modificación de datos personales.</p>
+    <div class="feat-tarjetas">
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Campos incluidos en esta acción</span><span class="tarjeta-texto">Autoriza &nbsp;·&nbsp; Habitante bajo expediente de baja &nbsp;·&nbsp; Observaciones</span></div>
+      </div>
+    </div>
+    <div class="nota"><strong>Beneficio: </strong>Evita la generación de movimientos innecesarios en el historial del habitante al actualizar información auxiliar.</div>
   </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
 
-  <!-- ── 7: CIERRE ─────────────────────────────────────── -->
-  <div class="slide" id="slide-7">
-    <div class="closing-c1"></div>
-    <div class="closing-c2"></div>
-    <div class="closing-inner">
-      <div class="closing-divider"></div>
-      <h2 class="closing-title">¡Gracias!</h2>
-      <p class="closing-sub">Novedades de Padrón de Habitantes · Versión 10.0.3.38.0<br>Junio 2026</p>
-      <div class="closing-tags">
-        <div class="closing-tag"><span class="closing-tag-num">01</span><span class="closing-tag-text">Identificación de habitantes bajo expediente de baja</span></div>
-        <div class="closing-tag"><span class="closing-tag-num">02</span><span class="closing-tag-text">Modificación de datos adicionales sin generar movimiento</span></div>
-        <div class="closing-tag"><span class="closing-tag-num">03</span><span class="closing-tag-text">Recuperación de hoja padronal antigua</span></div>
-        <div class="closing-tag"><span class="closing-tag-num">04</span><span class="closing-tag-text">Modificación de extremos de un tramo de numeración</span></div>
-        <div class="closing-tag"><span class="closing-tag-num">05</span><span class="closing-tag-text">Mejora de usabilidad en gestión de errores INE</span></div>
+<!-- ── 4: FUNCIONALIDAD 03 ───────────────────────── -->
+<div class="slide" id="slide-f03">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+      <span class="logo-texto">gestiona</span>
+    </div>
+    <div class="header-titulo">Funcionalidad 03 de 05</div>
+    <div class="header-version">v10.0.3.38.0</div>
+  </div>
+  <div class="cuerpo">
+    <div class="feat-encabezado">
+      <div class="feat-burbuja">03</div>
+      <div class="feat-encabezado-derecha">
+        <span class="etiqueta etiqueta-azul">Certificados</span>
+        <h2 class="feat-h">Recuperación de hoja padronal antigua</h2>
+      </div>
+    </div>
+    <div class="divisor"></div>
+    <p class="feat-parrafo">Se da un primer paso para permitir la obtención de certificados a partir de una hoja padronal antigua, especialmente en situaciones en las que existían de forma indebida varias hojas padronales por vivienda.</p>
+    <div class="feat-tarjetas">
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">▶</span>
+        <div><span class="tarjeta-label">En esta versión</span><span class="tarjeta-texto">El dato NHOP que figuraba en observaciones para algunos habitantes migrados se traslada al nuevo campo <em>"Hoja Padronal Antigua"</em>.</span></div>
+      </div>
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">▶</span>
+        <div><span class="tarjeta-label">Versión posterior</span><span class="tarjeta-texto">Se prevé emitir certificados indicando directamente ese número de hoja padronal antigua.</span></div>
       </div>
     </div>
   </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
 
-</div><!-- /#app -->
+<!-- ── 5: FUNCIONALIDAD 04 ───────────────────────── -->
+<div class="slide" id="slide-f04">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+      <span class="logo-texto">gestiona</span>
+    </div>
+    <div class="header-titulo">Funcionalidad 04 de 05</div>
+    <div class="header-version">v10.0.3.38.0</div>
+  </div>
+  <div class="cuerpo">
+    <div class="feat-encabezado">
+      <div class="feat-burbuja">04</div>
+      <div class="feat-encabezado-derecha">
+        <span class="etiqueta etiqueta-verde">Datos territoriales</span>
+        <h2 class="feat-h">Modificación de extremos de un tramo de numeración</h2>
+      </div>
+    </div>
+    <div class="divisor"></div>
+    <p class="feat-parrafo">Se incorpora una acción específica para modificar el extremo inferior y/o superior de un tramo de numeración sin provocar un movimiento de modificación de datos territoriales sobre los habitantes empadronados en dicho tramo.</p>
+    <div class="feat-tarjetas">
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Beneficio clave</span><span class="tarjeta-texto">Los cambios en los extremos de un tramo de numeración ya no generan movimientos innecesarios sobre los habitantes afectados.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
 
-<!-- ── Navegación ──────────────────────────────────────── -->
+<!-- ── 6: FUNCIONALIDAD 05 ───────────────────────── -->
+<div class="slide" id="slide-f05">
+  <div class="header-gestiona">
+    <div class="header-logo">
+      <div class="logo-icono"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+      <span class="logo-texto">gestiona</span>
+    </div>
+    <div class="header-titulo">Funcionalidad 05 de 05</div>
+    <div class="header-version">v10.0.3.38.0</div>
+  </div>
+  <div class="cuerpo">
+    <div class="feat-encabezado">
+      <div class="feat-burbuja">05</div>
+      <div class="feat-encabezado-derecha">
+        <span class="etiqueta etiqueta-azul">INE · Usabilidad</span>
+        <h2 class="feat-h">Mejora de usabilidad en gestión de errores INE</h2>
+      </div>
+    </div>
+    <div class="divisor"></div>
+    <p class="feat-parrafo">Se mejora la usabilidad del módulo de gestión de errores mediante un código de colores que permite identificar visualmente el estado de cada error de forma más rápida e intuitiva.</p>
+    <div class="feat-tarjetas">
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Código de colores</span><span class="tarjeta-texto">Identificación visual inmediata del estado de cada error INE sin necesidad de abrir el detalle.</span></div>
+      </div>
+      <div class="tarjeta-detalle">
+        <span class="tarjeta-icono">■</span>
+        <div><span class="tarjeta-label">Objetivo</span><span class="tarjeta-texto">Reducir el tiempo de revisión y mejorar la detección de incidencias pendientes de resolver.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-gestiona">
+    <span class="footer-left">Novedades Padrón · v10.0.3.38.0</span>
+    <span class="footer-right slide-counter"></span>
+  </div>
+</div>
+
+<!-- ── 7: CIERRE ──────────────────────────────────── -->
+<div class="slide" id="slide-cierre">
+  <div class="cierre-deco1"></div>
+  <div class="cierre-deco2"></div>
+  <div class="cierre-inner">
+    <div class="cierre-raya"></div>
+    <h2 class="cierre-titulo">¡Gracias!</h2>
+    <p class="cierre-sub">Novedades de Padrón de Habitantes · Versión 10.0.3.38.0<br>Junio 2026</p>
+    <div class="cierre-chips">
+      <div class="cierre-chip"><span class="cierre-chip-num">01</span><span class="cierre-chip-text">Identificación de habitantes bajo expediente de baja</span></div>
+      <div class="cierre-chip"><span class="cierre-chip-num">02</span><span class="cierre-chip-text">Modificación de datos adicionales sin generar movimiento</span></div>
+      <div class="cierre-chip"><span class="cierre-chip-num">03</span><span class="cierre-chip-text">Recuperación de hoja padronal antigua</span></div>
+      <div class="cierre-chip"><span class="cierre-chip-num">04</span><span class="cierre-chip-text">Modificación de extremos de un tramo de numeración</span></div>
+      <div class="cierre-chip"><span class="cierre-chip-num">05</span><span class="cierre-chip-text">Mejora de usabilidad en gestión de errores INE</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Botones de navegación ── -->
 <div id="nav-btns">
-  <button class="nav-btn" id="btn-home" title="Inicio" onclick="goTo(0)">⌂</button>
-  <button class="nav-btn" id="btn-prev" title="Anterior (←)" onclick="prev()">&#8249;</button>
-  <button class="nav-btn" id="btn-next" title="Siguiente (→)" onclick="next()">&#8250;</button>
+  <button class="nav-btn" id="btn-home" title="Inicio (Inicio)">⌂</button>
+  <button class="nav-btn" id="btn-prev" title="Anterior (←)">&#8249;</button>
+  <button class="nav-btn" id="btn-next" title="Siguiente (→)">&#8250;</button>
 </div>
 <div id="dots"></div>
 
 <script>
-  const TOTAL = 8;
+(function () {
+  const SLIDE_IDS = [
+    'slide-portada','slide-intro',
+    'slide-f01','slide-f02','slide-f03','slide-f04','slide-f05',
+    'slide-cierre'
+  ];
+  const TOTAL = SLIDE_IDS.length;
   let current = 0;
 
   function goTo(n) {
-    n = Math.max(0, Math.min(TOTAL - 1, n));
-    document.getElementById('slide-' + current).classList.remove('active');
+    if (n < 0 || n >= TOTAL) return;
+    document.getElementById(SLIDE_IDS[current]).classList.remove('active');
     current = n;
-    document.getElementById('slide-' + current).classList.add('active');
-    updateUI();
-  }
-  function prev() { goTo(current - 1); }
-  function next() { goTo(current + 1); }
-
-  function updateUI() {
-    document.getElementById('btn-home').disabled = current === 0;
-    document.getElementById('btn-prev').disabled = current === 0;
-    document.getElementById('btn-next').disabled = current === TOTAL - 1;
-    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
-    document.querySelectorAll('.slide-counter').forEach(el => el.textContent = (current + 1) + ' / ' + TOTAL);
+    document.getElementById(SLIDE_IDS[current]).classList.add('active');
+    syncUI();
   }
 
-  // Build dots
-  const dotsEl = document.getElementById('dots');
-  for (let i = 0; i < TOTAL; i++) {
-    const d = document.createElement('button');
+  function syncUI() {
+    document.getElementById('btn-home').disabled = (current === 0);
+    document.getElementById('btn-prev').disabled = (current === 0);
+    document.getElementById('btn-next').disabled = (current === TOTAL - 1);
+
+    document.querySelectorAll('.dot').forEach(function (d, i) {
+      d.classList.toggle('active', i === current);
+      d.style.width = (i === current) ? '20px' : '8px';
+    });
+
+    document.querySelectorAll('.slide-counter').forEach(function (el) {
+      el.textContent = (current + 1) + ' / ' + TOTAL;
+    });
+  }
+
+  // Botones
+  document.getElementById('btn-home').addEventListener('click', function () { goTo(0); });
+  document.getElementById('btn-prev').addEventListener('click', function () { goTo(current - 1); });
+  document.getElementById('btn-next').addEventListener('click', function () { goTo(current + 1); });
+
+  // Puntos
+  var dotsEl = document.getElementById('dots');
+  SLIDE_IDS.forEach(function (_, i) {
+    var d = document.createElement('button');
     d.className = 'dot' + (i === 0 ? ' active' : '');
-    d.style.width = i === 0 ? '20px' : '8px';
+    d.style.width = (i === 0) ? '20px' : '8px';
     d.title = 'Diapositiva ' + (i + 1);
-    d.onclick = () => goTo(i);
+    d.addEventListener('click', function () { goTo(i); });
     dotsEl.appendChild(d);
-  }
+  });
 
-  // Keyboard
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prev(); }
+  // Teclado
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); goTo(current - 1); }
     if (e.key === 'Home') goTo(0);
     if (e.key === 'End')  goTo(TOTAL - 1);
   });
 
-  // Dot width animation
-  document.getElementById('dots').addEventListener('click', () => {
-    document.querySelectorAll('.dot').forEach((d, i) => d.style.width = i === current ? '20px' : '8px');
-  });
-  function updateDotWidths() {
-    document.querySelectorAll('.dot').forEach((d, i) => d.style.width = i === current ? '20px' : '8px');
-  }
-
-  const _goTo = goTo;
-  function goTo(n) { _goTo(n); updateDotWidths(); }
-
-  updateUI();
+  syncUI();
+})();
 </script>
 </body>
 </html>
