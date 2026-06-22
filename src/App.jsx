@@ -1,351 +1,919 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Upload, Trash2, Settings } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Home, Circle } from 'lucide-react';
 
-const AgenteGemini = () => {
-  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
-  const [showApiModal, setShowApiModal] = useState(!apiKey);
-  const [documents, setDocuments] = useState(JSON.parse(localStorage.getItem('agente_docs') || '[]'));
-  const [messages, setMessages] = useState(JSON.parse(localStorage.getItem('agente_messages') || '[]'));
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEnd = useRef(null);
-  const fileInputRef = useRef(null);
+const COLORS = {
+  primary: '#005baa',
+  primaryDark: '#003d7a',
+  primaryLight: '#e8f1fb',
+  accent: '#00a651',
+  accentLight: '#e6f7ef',
+  text: '#1a1a2e',
+  textMuted: '#5a6a7a',
+  white: '#ffffff',
+  border: '#d0dcea',
+  badgeBg: '#f0f4fa',
+  tagBlue: '#dbeafe',
+  tagGreen: '#d1fae5',
+};
 
-  const scrollToBottom = () => {
-    messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+const slides = [
+  { id: 'portada', type: 'cover' },
+  { id: 'intro', type: 'intro' },
+  { id: 'func1', type: 'feature', index: 0 },
+  { id: 'func2', type: 'feature', index: 1 },
+  { id: 'func3', type: 'feature', index: 2 },
+  { id: 'func4', type: 'feature', index: 3 },
+  { id: 'func5', type: 'feature', index: 4 },
+  { id: 'cierre', type: 'closing' },
+];
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+const features = [
+  {
+    number: '01',
+    title: 'Identificación de habitantes bajo expediente de baja',
+    tag: 'Control y seguimiento',
+    tagColor: 'blue',
+    body: [
+      'Se incorpora una funcionalidad para identificar a los habitantes en proceso de baja, como primer paso para su control en la futura generación de certificados.',
+    ],
+    details: [
+      {
+        icon: '●',
+        label: 'Marca directa en la ficha',
+        text: 'Indicador específico en la ficha del habitante.',
+      },
+      {
+        icon: '●',
+        label: 'Via procedimiento',
+        text: 'El habitante está incluido en un procedimiento con actividad "Padrón de habitantes (baja)".',
+      },
+    ],
+    note: 'Basta con que se cumpla uno de los dos mecanismos para que el habitante quede identificado con ese estado.',
+  },
+  {
+    number: '02',
+    title: 'Modificación de datos adicionales sin generar movimiento',
+    tag: 'Operativa',
+    tagColor: 'green',
+    body: [
+      'Nueva acción que permite modificar determinados datos adicionales del habitante sin crear un movimiento de modificación de datos personales.',
+    ],
+    details: [
+      {
+        icon: '◆',
+        label: 'Campos incluidos',
+        text: 'Autoriza · Habitante bajo expediente de baja · Observaciones',
+      },
+    ],
+    note: 'Evita movimientos innecesarios en el historial del habitante al actualizar información auxiliar.',
+  },
+  {
+    number: '03',
+    title: 'Recuperación de hoja padronal antigua',
+    tag: 'Certificados',
+    tagColor: 'blue',
+    body: [
+      'Primer paso para permitir la obtención de certificados a partir de una hoja padronal antigua, especialmente cuando existían varias hojas padronales por vivienda de forma indebida.',
+    ],
+    details: [
+      {
+        icon: '▶',
+        label: 'En esta versión',
+        text: 'El dato NHOP que figuraba en observaciones para habitantes migrados se traslada al nuevo campo "Hoja Padronal Antigua".',
+      },
+      {
+        icon: '▶',
+        label: 'Versión posterior',
+        text: 'Se prevé emitir certificados indicando directamente ese número de hoja padronal.',
+      },
+    ],
+    note: null,
+  },
+  {
+    number: '04',
+    title: 'Modificación de extremos de un tramo de numeración',
+    tag: 'Datos territoriales',
+    tagColor: 'green',
+    body: [
+      'Acción específica para modificar el extremo inferior y/o superior de un tramo de numeración sin provocar un movimiento de modificación de datos territoriales sobre los habitantes empadronados.',
+    ],
+    details: [
+      {
+        icon: '◆',
+        label: 'Beneficio clave',
+        text: 'Los cambios en tramos de numeración ya no generan movimientos innecesarios sobre los habitantes afectados.',
+      },
+    ],
+    note: null,
+  },
+  {
+    number: '05',
+    title: 'Mejora de usabilidad en gestión de errores INE',
+    tag: 'INE / Usabilidad',
+    tagColor: 'blue',
+    body: [
+      'Se mejora la usabilidad del módulo de gestión de errores mediante un código de colores que permite identificar visualmente el estado de cada error de forma más rápida e intuitiva.',
+    ],
+    details: [
+      {
+        icon: '●',
+        label: 'Código de colores',
+        text: 'Identificación visual inmediata del estado de cada error INE.',
+      },
+      {
+        icon: '●',
+        label: 'Objetivo',
+        text: 'Reducir el tiempo de revisión y mejorar la detección de incidencias pendientes.',
+      },
+    ],
+    note: null,
+  },
+];
 
-  useEffect(() => {
-    localStorage.setItem('agente_messages', JSON.stringify(messages));
-  }, [messages]);
+// ─── Layout wrapper ──────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    localStorage.setItem('agente_docs', JSON.stringify(documents));
-  }, [documents]);
+const SlideLayout = ({ children, footer = true, current, total }) => (
+  <div
+    style={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: "'Segoe UI', Arial, sans-serif",
+      background: COLORS.white,
+      overflow: 'hidden',
+    }}
+  >
+    <div style={{ flex: 1, overflow: 'hidden' }}>{children}</div>
+    {footer && (
+      <div
+        style={{
+          background: COLORS.primaryDark,
+          color: 'rgba(255,255,255,0.55)',
+          fontSize: '11px',
+          padding: '8px 32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <span>Novedades Padrón de Habitantes · v10.0.3.38.0</span>
+        <span>
+          {current} / {total}
+        </span>
+      </div>
+    )}
+  </div>
+);
 
-  const handleApiKeySubmit = (e) => {
-    e.preventDefault();
-    if (apiKey.trim()) {
-      localStorage.setItem('gemini_api_key', apiKey);
-      setShowApiModal(false);
-    }
-  };
+// ─── Top bar shared component ─────────────────────────────────────────────────
 
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    
-    for (const file of files) {
-      try {
-        const text = await file.text();
-        setDocuments([...documents, {
-          id: Date.now() + Math.random(),
-          name: file.name,
-          content: text,
-          type: file.type,
-          size: file.size
-        }]);
-      } catch (error) {
-        console.error('Error leyendo archivo:', error);
-      }
-    }
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+const TopBar = ({ label }) => (
+  <div
+    style={{
+      background: COLORS.primary,
+      padding: '0 40px',
+      height: '52px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }}
+  >
+    <span
+      style={{
+        color: COLORS.white,
+        fontWeight: 700,
+        fontSize: '15px',
+        letterSpacing: '0.02em',
+        textTransform: 'uppercase',
+      }}
+    >
+      Gestiona
+    </span>
+    {label && (
+      <span
+        style={{
+          color: 'rgba(255,255,255,0.75)',
+          fontSize: '12px',
+          fontWeight: 500,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
+    )}
+  </div>
+);
 
-  const deleteDocument = (id) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
-  };
+// ─── Slide: Portada ───────────────────────────────────────────────────────────
 
-  const callGeminiAPI = async (userMessage) => {
-    if (!apiKey.trim()) {
-      alert('Por favor, configura tu API Key de Google');
-      setShowApiModal(true);
-      return;
-    }
+const SlideCover = ({ current, total }) => (
+  <SlideLayout footer={false} current={current} total={total}>
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: `linear-gradient(135deg, ${COLORS.primaryDark} 0%, ${COLORS.primary} 60%, #0077cc 100%)`,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Decorative circles */}
+      <div
+        style={{
+          position: 'absolute',
+          right: '-80px',
+          top: '-80px',
+          width: '400px',
+          height: '400px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.06)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          right: '60px',
+          bottom: '-60px',
+          width: '280px',
+          height: '280px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.04)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '-40px',
+          bottom: '80px',
+          width: '200px',
+          height: '200px',
+          borderRadius: '50%',
+          background: 'rgba(0,166,81,0.18)',
+        }}
+      />
 
-    setLoading(true);
-    
-    try {
-      // Preparar el contexto con los documentos
-      let context = '';
-      if (documents.length > 0) {
-        context = `\n\n**DOCUMENTOS DISPONIBLES:**\n`;
-        documents.forEach(doc => {
-          context += `\n[${doc.name}]\n${doc.content.substring(0, 2000)}...\n`;
-        });
-        context += `\n**Usa la información anterior si es relevante para responder.**`;
-      }
-
-      const fullPrompt = userMessage + context;
-
-      // Llamar a Gemini API con búsqueda web habilitada
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: fullPrompt
-            }]
-          }],
-          tools: [{
-            googleSearch: {}
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000
-          }
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Error en la API');
-      }
-
-      // Extraer la respuesta
-      let botResponse = '';
-      if (data.candidates && data.candidates[0]) {
-        const candidate = data.candidates[0];
-        
-        // Procesar partes de contenido
-        if (candidate.content && candidate.content.parts) {
-          botResponse = candidate.content.parts
-            .map(part => part.text || '')
-            .join('');
-        }
-
-        // Procesar búsquedas web si las hay
-        if (candidate.groundingMetadata && candidate.groundingMetadata.searchEntryPoint) {
-          botResponse += '\n\n*Búsqueda realizada en internet para información actualizada*';
-        }
-      }
-
-      if (!botResponse) {
-        botResponse = 'No pude procesar la respuesta. Por favor, intenta de nuevo.';
-      }
-
-      setMessages([...messages, 
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: botResponse }
-      ]);
-      setInput('');
-    } catch (error) {
-      console.error('Error:', error);
-      setMessages([...messages, 
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: `❌ Error: ${error.message}` }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (input.trim() && !loading) {
-      callGeminiAPI(input);
-    }
-  };
-
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-      {/* Panel de documentos */}
-      <div className="w-72 border-r border-slate-700 bg-slate-900/50 flex flex-col overflow-hidden">
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="text-xl font-bold text-white mb-1" style={{ fontFamily: 'Georgia, serif' }}>
-            Agente IA
-          </h1>
-          <p className="text-xs text-slate-400">con búsqueda web</p>
-        </div>
-
-        {/* Documentos */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="mb-4">
-            <p className="text-xs font-semibold text-slate-300 uppercase mb-3 tracking-wide">
-              Documentos ({documents.length})
-            </p>
-            {documents.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">Sin documentos cargados</p>
-            ) : (
-              <div className="space-y-2">
-                {documents.map(doc => (
-                  <div key={doc.id} className="flex items-start justify-between p-2 rounded bg-slate-800/50 hover:bg-slate-800 transition">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-200 truncate">{doc.name}</p>
-                      <p className="text-xs text-slate-500">{(doc.size / 1024).toFixed(1)} KB</p>
-                    </div>
-                    <button
-                      onClick={() => deleteDocument(doc.id)}
-                      className="ml-2 p-1 text-slate-500 hover:text-red-400 transition"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Botones */}
-        <div className="p-4 space-y-3 border-t border-slate-700">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg text-sm font-medium transition transform hover:scale-105"
-          >
-            <Upload size={16} />
-            Subir documento
-          </button>
-          <button
-            onClick={() => setShowApiModal(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-sm font-medium transition"
-          >
-            <Settings size={16} />
-            API Key
-          </button>
-          <button
-            onClick={() => {
-              setMessages([]);
-              localStorage.removeItem('agente_messages');
-            }}
-            className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-sm font-medium transition"
-          >
-            Limpiar chat
-          </button>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={handleFileUpload}
-          className="hidden"
-          accept=".txt,.pdf,.md,.json"
+      {/* Logo bar */}
+      <div
+        style={{
+          padding: '24px 48px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <div
+          style={{
+            background: COLORS.accent,
+            width: '8px',
+            height: '36px',
+            borderRadius: '4px',
+          }}
         />
+        <span
+          style={{
+            color: COLORS.white,
+            fontWeight: 800,
+            fontSize: '22px',
+            letterSpacing: '0.04em',
+          }}
+        >
+          Gestiona
+        </span>
+        <span
+          style={{
+            color: 'rgba(255,255,255,0.5)',
+            fontSize: '13px',
+            marginLeft: '4px',
+            paddingTop: '4px',
+          }}
+        >
+          · Padrón de Habitantes
+        </span>
       </div>
 
-      {/* Chat */}
-      <div className="flex-1 flex flex-col">
-        {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto p-8">
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-slate-200 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-                  Bienvenido
-                </h2>
-                <p className="text-slate-400 max-w-md">
-                  Sube documentos a la izquierda y hazme preguntas. Buscaré en internet y analizaré tus archivos.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 max-w-3xl">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-lg px-4 py-3 rounded-lg ${
-                      msg.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-br-none'
-                        : 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-slate-800 text-slate-100 px-4 py-3 rounded-lg border border-slate-700 rounded-bl-none">
-                    <div className="flex gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEnd} />
-            </div>
-          )}
+      {/* Main content */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 64px',
+        }}
+      >
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '20px',
+            padding: '4px 16px',
+            marginBottom: '28px',
+            width: 'fit-content',
+          }}
+        >
+          <span style={{ color: COLORS.accent, marginRight: '8px', fontSize: '10px' }}>●</span>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '12px', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Seminario · Junio 2026
+          </span>
         </div>
 
-        {/* Input */}
-        <div className="border-t border-slate-700 bg-slate-900/50 p-6">
-          <form onSubmit={handleSubmit} className="max-w-3xl flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Hazme una pregunta..."
-              disabled={loading}
-              className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+        <h1
+          style={{
+            color: COLORS.white,
+            fontSize: '46px',
+            fontWeight: 800,
+            lineHeight: 1.1,
+            margin: 0,
+            marginBottom: '16px',
+            maxWidth: '720px',
+          }}
+        >
+          Novedades de Padrón de Habitantes
+        </h1>
+
+        <div
+          style={{
+            width: '60px',
+            height: '4px',
+            background: COLORS.accent,
+            borderRadius: '2px',
+            marginBottom: '24px',
+          }}
+        />
+
+        <p
+          style={{
+            color: 'rgba(255,255,255,0.75)',
+            fontSize: '18px',
+            fontWeight: 400,
+            maxWidth: '600px',
+            lineHeight: 1.5,
+            margin: 0,
+            marginBottom: '40px',
+          }}
+        >
+          Resumen funcional de mejoras e incidencias corregidas incluidas en la versión de junio de 2026.
+        </p>
+
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: 'rgba(0,166,81,0.2)',
+            border: '1px solid rgba(0,166,81,0.4)',
+            borderRadius: '8px',
+            padding: '8px 20px',
+            width: 'fit-content',
+          }}
+        >
+          <span style={{ color: COLORS.accent, fontSize: '13px', fontWeight: 600, letterSpacing: '0.03em' }}>
+            Versión 10.0.3.38.0
+          </span>
+        </div>
+      </div>
+
+      {/* Bottom indicator */}
+      <div
+        style={{
+          padding: '20px 48px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+          {current} / {total} · Usa las flechas para navegar
+        </span>
+      </div>
+    </div>
+  </SlideLayout>
+);
+
+// ─── Slide: Introducción ──────────────────────────────────────────────────────
+
+const SlideIntro = ({ current, total }) => (
+  <SlideLayout current={current} total={total}>
+    <TopBar label="Introducción" />
+    <div
+      style={{
+        padding: '44px 56px',
+        height: 'calc(100vh - 52px - 36px)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '28px',
+          }}
+        >
+          <div
+            style={{
+              width: '6px',
+              height: '36px',
+              background: COLORS.accent,
+              borderRadius: '3px',
+              flexShrink: 0,
+            }}
+          />
+          <h2
+            style={{
+              color: COLORS.primary,
+              fontSize: '30px',
+              fontWeight: 700,
+              margin: 0,
+            }}
+          >
+            Introducción
+          </h2>
+        </div>
+
+        <p
+          style={{
+            color: COLORS.text,
+            fontSize: '17px',
+            lineHeight: 1.75,
+            maxWidth: '820px',
+            margin: '0 0 40px 0',
+            padding: '20px 24px',
+            background: COLORS.primaryLight,
+            borderLeft: `4px solid ${COLORS.primary}`,
+            borderRadius: '0 8px 8px 0',
+          }}
+        >
+          Esta versión incorpora mejoras orientadas a reforzar la gestión de habitantes, facilitar
+          determinadas operaciones sin generar movimientos innecesarios, preparar funcionalidades
+          relacionadas con certificados y mejorar la usabilidad y resolución de incidencias en la
+          integración con INE.
+        </p>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '16px',
+          }}
+        >
+          {features.map((f) => (
+            <div
+              key={f.number}
+              style={{
+                background: COLORS.badgeBg,
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: '10px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
             >
-              <Send size={20} />
-            </button>
-          </form>
+              <span
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 800,
+                  color: COLORS.primary,
+                  opacity: 0.6,
+                }}
+              >
+                {f.number}
+              </span>
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: COLORS.text,
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                }}
+              >
+                {f.title}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Modal API Key */}
-      {showApiModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-900 p-8 rounded-xl border border-slate-700 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold text-white mb-4" style={{ fontFamily: 'Georgia, serif' }}>
-              Configura tu API Key
-            </h2>
-            <p className="text-sm text-slate-300 mb-4">
-              Necesitas una API Key de Google. Obtenla gratis en{' '}
-              <a
-                href="https://ai.google.dev/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
+      <div
+        style={{
+          borderTop: `1px solid ${COLORS.border}`,
+          paddingTop: '16px',
+          color: COLORS.textMuted,
+          fontSize: '12px',
+        }}
+      >
+        5 nuevas funcionalidades · Versión 10.0.3.38.0 · Junio 2026
+      </div>
+    </div>
+  </SlideLayout>
+);
+
+// ─── Slide: Feature ───────────────────────────────────────────────────────────
+
+const Tag = ({ label, color }) => (
+  <span
+    style={{
+      display: 'inline-block',
+      padding: '3px 12px',
+      borderRadius: '12px',
+      fontSize: '11px',
+      fontWeight: 600,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      background: color === 'green' ? COLORS.tagGreen : COLORS.tagBlue,
+      color: color === 'green' ? '#065f46' : '#1e40af',
+    }}
+  >
+    {label}
+  </span>
+);
+
+const SlideFeature = ({ feature, current, total }) => (
+  <SlideLayout current={current} total={total}>
+    <TopBar label={`Funcionalidad ${feature.number}`} />
+    <div
+      style={{
+        padding: '36px 56px',
+        height: 'calc(100vh - 52px - 36px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
+        <div
+          style={{
+            background: COLORS.primaryDark,
+            color: COLORS.white,
+            width: '52px',
+            height: '52px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            fontWeight: 800,
+            flexShrink: 0,
+          }}
+        >
+          {feature.number}
+        </div>
+        <div>
+          <Tag label={feature.tag} color={feature.tagColor} />
+          <h2
+            style={{
+              color: COLORS.primary,
+              fontSize: '26px',
+              fontWeight: 700,
+              margin: '8px 0 0 0',
+              lineHeight: 1.25,
+            }}
+          >
+            {feature.title}
+          </h2>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: '2px', background: COLORS.primaryLight }} />
+
+      {/* Body */}
+      {feature.body.map((text, i) => (
+        <p
+          key={i}
+          style={{
+            color: COLORS.text,
+            fontSize: '16px',
+            lineHeight: 1.7,
+            margin: 0,
+          }}
+        >
+          {text}
+        </p>
+      ))}
+
+      {/* Detail cards */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          flex: 1,
+        }}
+      >
+        {feature.details.map((d, i) => (
+          <div
+            key={i}
+            style={{
+              background: COLORS.badgeBg,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: '10px',
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '14px',
+            }}
+          >
+            <span style={{ color: COLORS.primary, fontSize: '10px', marginTop: '5px', flexShrink: 0 }}>
+              {d.icon}
+            </span>
+            <div>
+              <span
+                style={{
+                  display: 'block',
+                  fontWeight: 700,
+                  color: COLORS.primary,
+                  fontSize: '13px',
+                  marginBottom: '4px',
+                }}
               >
-                ai.google.dev
-              </a>
-            </p>
-            <form onSubmit={handleApiKeySubmit}>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Pega tu API Key aquí"
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 mb-4"
-              />
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium transition"
-              >
-                Guardar API Key
-              </button>
-            </form>
-            <p className="text-xs text-slate-500 mt-4">
-              Tu API Key se guarda solo en tu navegador, no se envía a servidores externos.
-            </p>
+                {d.label}
+              </span>
+              <span style={{ color: COLORS.text, fontSize: '14px', lineHeight: 1.5 }}>{d.text}</span>
+            </div>
           </div>
+        ))}
+      </div>
+
+      {/* Note */}
+      {feature.note && (
+        <div
+          style={{
+            background: COLORS.accentLight,
+            border: `1px solid ${COLORS.accent}30`,
+            borderLeft: `4px solid ${COLORS.accent}`,
+            borderRadius: '0 8px 8px 0',
+            padding: '12px 16px',
+            color: '#065f46',
+            fontSize: '13px',
+            lineHeight: 1.55,
+          }}
+        >
+          <strong>Nota: </strong>
+          {feature.note}
         </div>
       )}
     </div>
-  );
-};
+  </SlideLayout>
+);
 
-export default AgenteGemini;
+// ─── Slide: Cierre ────────────────────────────────────────────────────────────
+
+const SlideClosing = ({ current, total }) => (
+  <SlideLayout footer={false} current={current} total={total}>
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: `linear-gradient(160deg, ${COLORS.primaryDark} 0%, ${COLORS.primary} 100%)`,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          left: '-100px',
+          top: '-100px',
+          width: '400px',
+          height: '400px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.04)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          right: '-60px',
+          bottom: '-60px',
+          width: '300px',
+          height: '300px',
+          borderRadius: '50%',
+          background: 'rgba(0,166,81,0.12)',
+        }}
+      />
+
+      <div
+        style={{
+          width: '64px',
+          height: '4px',
+          background: COLORS.accent,
+          borderRadius: '2px',
+          marginBottom: '32px',
+        }}
+      />
+
+      <h2
+        style={{
+          color: COLORS.white,
+          fontSize: '42px',
+          fontWeight: 800,
+          margin: '0 0 16px 0',
+          textAlign: 'center',
+        }}
+      >
+        ¡Gracias!
+      </h2>
+
+      <p
+        style={{
+          color: 'rgba(255,255,255,0.65)',
+          fontSize: '16px',
+          textAlign: 'center',
+          maxWidth: '480px',
+          lineHeight: 1.6,
+          margin: '0 0 48px 0',
+        }}
+      >
+        Novedades de Padrón de Habitantes · Versión 10.0.3.38.0
+        <br />
+        Junio 2026
+      </p>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          maxWidth: '600px',
+        }}
+      >
+        {features.map((f) => (
+          <div
+            key={f.number}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '8px',
+              padding: '6px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ color: COLORS.accent, fontSize: '11px', fontWeight: 700 }}>{f.number}</span>
+            <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px' }}>{f.title}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </SlideLayout>
+);
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+
+export default function App() {
+  const [current, setCurrent] = useState(0);
+  const total = slides.length;
+
+  const prev = useCallback(() => setCurrent((c) => Math.max(0, c - 1)), []);
+  const next = useCallback(() => setCurrent((c) => Math.min(total - 1, c + 1)), [total]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+      if (e.key === 'Home') setCurrent(0);
+      if (e.key === 'End') setCurrent(total - 1);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [next, prev, total]);
+
+  const slide = slides[current];
+
+  const renderSlide = () => {
+    if (slide.type === 'cover') return <SlideCover current={current + 1} total={total} />;
+    if (slide.type === 'intro') return <SlideIntro current={current + 1} total={total} />;
+    if (slide.type === 'feature')
+      return <SlideFeature feature={features[slide.index]} current={current + 1} total={total} />;
+    if (slide.type === 'closing') return <SlideClosing current={current + 1} total={total} />;
+    return null;
+  };
+
+  return (
+    <div style={{ position: 'relative', userSelect: 'none' }}>
+      {renderSlide()}
+
+      {/* Navigation controls */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '52px',
+          right: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          zIndex: 100,
+        }}
+      >
+        <button
+          onClick={() => setCurrent(0)}
+          disabled={current === 0}
+          title="Inicio"
+          style={{
+            background: 'rgba(0,61,122,0.85)',
+            border: 'none',
+            borderRadius: '8px',
+            color: COLORS.white,
+            width: '34px',
+            height: '34px',
+            cursor: current === 0 ? 'default' : 'pointer',
+            opacity: current === 0 ? 0.3 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Home size={14} />
+        </button>
+        <button
+          onClick={prev}
+          disabled={current === 0}
+          title="Anterior (←)"
+          style={{
+            background: 'rgba(0,61,122,0.85)',
+            border: 'none',
+            borderRadius: '8px',
+            color: COLORS.white,
+            width: '34px',
+            height: '34px',
+            cursor: current === 0 ? 'default' : 'pointer',
+            opacity: current === 0 ? 0.3 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <button
+          onClick={next}
+          disabled={current === total - 1}
+          title="Siguiente (→)"
+          style={{
+            background: 'rgba(0,61,122,0.85)',
+            border: 'none',
+            borderRadius: '8px',
+            color: COLORS.white,
+            width: '34px',
+            height: '34px',
+            cursor: current === total - 1 ? 'default' : 'pointer',
+            opacity: current === total - 1 ? 0.3 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* Dot indicators */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '52px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '6px',
+          alignItems: 'center',
+          zIndex: 100,
+        }}
+      >
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            title={`Ir a diapositiva ${i + 1}`}
+            style={{
+              width: i === current ? '20px' : '8px',
+              height: '8px',
+              borderRadius: '4px',
+              background: i === current ? COLORS.primary : COLORS.border,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              padding: 0,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
