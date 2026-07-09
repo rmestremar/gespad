@@ -1,0 +1,55 @@
+# Filtro de errores/incidencias INE — Padrón
+
+Aplicación web de un único fichero HTML (sin instalación, sin dependencias, sin conexión a
+internet) para trabajar con los ficheros de devolución mensual del INE de la **Relación de
+Habitantes** (`H*.A??`, formato INE-Ayuntamientos).
+
+Permite:
+
+1. Cargar varios ficheros de errores/incidencias del INE a la vez (arrastrar y soltar, o
+   selector de ficheros).
+2. Filtrar los registros por municipio, tipo de información (`TIPOINF`), código de variación
+   (`CVAR`), causa de variación (`CAUV`), causa de devolución (`CDEV`), texto libre (nombre,
+   apellidos, NIA, documento) y, sobre todo, por **tipo de error/incidencia concreto** de la
+   cola de errores (150 posiciones), con su descripción oficial y la actuación recomendada
+   para el Ayuntamiento.
+3. Seleccionar manualmente (o por lote, tras filtrar) los registros que interesa tratar.
+4. Generar y descargar un fichero de salida con la **misma estructura** que el original
+   (704 caracteres por línea: 554 de datos + 150 de cola de errores), conteniendo únicamente
+   las líneas seleccionadas, listo para cargar en el programa de gestión de Padrón.
+
+## Cómo usarlo
+
+Abre `index.html` con doble clic (se abre en tu navegador habitual). No requiere instalar
+nada ni tener conexión a internet: todo el procesamiento ocurre en tu propio equipo y ningún
+dato se envía a ningún servidor.
+
+## Diseño de registro
+
+Basado en:
+
+- *Diseños de registro de los ficheros de intercambio de información INE-Ayuntamientos*
+  (marzo 2015) — estructura de 554 posiciones del fichero de Relación de Habitantes.
+- *Normas para el tratamiento de las incidencias resultantes de la incorporación de las
+  variaciones mensuales a los ficheros padronales del INE* (noviembre 2020) — significado de
+  cada una de las 150 posiciones de la cola de errores.
+- `TablaErroresIncidencias202607.txt` — catálogo oficial (código, TIPOINF, CDEV, descripción
+  y actuación) descargado de IDA-Padrón, incrustado en la aplicación (julio 2026). Si el INE
+  publica una tabla más reciente con cambios en las descripciones, basta con regenerar el
+  bloque `ERROR_CATALOG` al principio del `<script>` de `index.html` a partir del nuevo
+  fichero (mismo formato de registro de 258 caracteres, ver PDF *Formato de registro de la
+  tabla Errores/Incidencias*).
+
+## Limitaciones conocidas
+
+- Solo entiende el fichero de **Relación de Habitantes** (tipo `H`). Los ficheros de Unidades
+  Poblacionales, Vías, Pseudovías, Tipos de Vía, Tramos o Renumeración de Vías tienen un
+  diseño de registro distinto y no se cargan con esta herramienta.
+- No valida ni corrige los datos del registro: solo permite filtrar, seleccionar y volcar tal
+  cual las líneas del original. La corrección de los errores se sigue haciendo en el programa
+  de gestión de Padrón del Ayuntamiento.
+- Los códigos 146 y 149 de la cola de errores no se marcan con `X` sino con letras/dígitos
+  (`S`/`N`, o un código de causa de devolución de carta); la aplicación los detecta igual como
+  "incidencia presente" pero no interpreta ese carácter adicional más allá de mostrarlo.
+- Ficheros muy grandes (varias decenas de miles de registros) pueden ir algo lentos al
+  filtrar, ya que todo se procesa en el navegador; la tabla se pagina para mantenerla usable.

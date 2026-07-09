@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filtro de errores INE - Padrón</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --border:#dde1e6; --text:#1c2126; --muted:#5b6470;
+  --accent:#2f6feb; --accent-ink:#ffffff; --danger:#c53030; --ok:#1a7f37;
+  --row-alt:#fafbfc; --row-hover:#eef3fd; --chip:#eef1f5; --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#14171c; --panel:#1b1f26; --border:#2c333d; --text:#e6e9ee; --muted:#9aa4b2;
+    --accent:#5b8bff; --accent-ink:#0b1020; --danger:#ff6b6b; --ok:#3fbf6f;
+    --row-alt:#1f242c; --row-hover:#232a35; --chip:#262c35; --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171c; --panel:#1b1f26; --border:#2c333d; --text:#e6e9ee; --muted:#9aa4b2;
+  --accent:#5b8bff; --accent-ink:#0b1020; --danger:#ff6b6b; --ok:#3fbf6f;
+  --row-alt:#1f242c; --row-hover:#232a35; --chip:#262c35; --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#f4f5f7; --panel:#ffffff; --border:#dde1e6; --text:#1c2126; --muted:#5b6470;
+  --accent:#2f6feb; --accent-ink:#ffffff; --danger:#c53030; --ok:#1a7f37;
+  --row-alt:#fafbfc; --row-hover:#eef3fd; --chip:#eef1f5; --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:20px 20px 60px}
+h1{font-size:20px;margin:0 0 2px}
+.subtitle{color:var(--muted);margin:0 0 18px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 12px}
+.drop{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s, background .15s}
+.drop:hover,.drop.drag{border-color:var(--accent);background:var(--row-hover)}
+.drop input{display:none}
+.filelist{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+.filechip{display:flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:5px 6px 5px 12px;font-size:12.5px}
+.filechip b{font-weight:600}
+.filechip button{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:3px 6px;border-radius:999px}
+.filechip button:hover{background:var(--row-hover);color:var(--danger)}
+.filechip .warn{color:var(--danger)}
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.stats b{color:var(--text);font-size:14px}
+.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+select,input[type=text],input[type=search]{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);font-size:13px}
+select:focus,input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.codepicker{position:relative}
+.codepicker-btn{width:100%;text-align:left;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);cursor:pointer;font-size:13px}
+.codepicker-menu{position:absolute;z-index:20;top:calc(100% + 4px);left:0;width:min(420px,90vw);max-height:340px;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:8px;display:none}
+.codepicker-menu.open{display:block}
+.codepicker-menu input{margin-bottom:6px}
+.code-opt{display:flex;gap:8px;align-items:flex-start;padding:5px 6px;border-radius:6px;cursor:pointer;font-size:12.5px}
+.code-opt:hover{background:var(--row-hover)}
+.code-opt .n{font-variant-numeric:tabular-nums;color:var(--muted);min-width:28px}
+.code-opt .d{flex:1}
+.code-opt .badge-cdev{font-size:10px;color:var(--muted)}
+.chips-active{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip-active{display:flex;align-items:center;gap:6px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:3px 5px 3px 10px;font-size:12px}
+.chip-active button{border:none;background:rgba(255,255,255,.25);color:inherit;border-radius:999px;width:16px;height:16px;cursor:pointer;font-size:11px;line-height:1}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.toolbar .left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbar .right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+button.btn{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 13px;border-radius:7px;font-size:13px;cursor:pointer}
+button.btn:hover{background:var(--row-hover)}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.btn.primary:hover{filter:brightness(1.06)}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+.tablewrap{overflow:auto;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+thead th{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--border);text-align:left;padding:9px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);white-space:nowrap;z-index:5}
+tbody td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:nth-child(even){background:var(--row-alt)}
+tbody tr:hover{background:var(--row-hover)}
+tbody tr.sel{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+.mono{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600}
+.pill-A{background:#d3f2dd;color:#116932}
+.pill-B{background:#fddede;color:#8f1d1d}
+.pill-M{background:#dee8fd;color:#1d4a8f}
+:root[data-theme="dark"] .pill-A,body:not([data-theme]) .pill-A{filter:brightness(.85)}
+.codes{display:flex;flex-wrap:wrap;gap:4px;max-width:260px}
+.codebadge{background:var(--chip);border:1px solid var(--border);border-radius:5px;padding:0 5px;font-size:11px;cursor:help}
+.codebadge.tipR{border-color:var(--danger);color:var(--danger)}
+.name-cell{max-width:220px}
+.muted{color:var(--muted)}
+.rowdetail{background:var(--row-alt)}
+.rowdetail td{padding:10px 14px}
+.detail-code{margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed var(--border)}
+.detail-code:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.detail-code .hd{font-weight:600;margin-bottom:2px}
+.detail-code .accion{color:var(--muted);font-size:12px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px}
+.pager span{color:var(--muted);font-size:12.5px}
+.exportbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.exportbar input[type=text]{max-width:340px}
+footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px}
+.badge-count{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Filtro de errores/incidencias INE &mdash; Padrón</h1>
+  <p class="subtitle">Carga ficheros de devolución del INE (Relación de Habitantes, formato H*.A??), filtra por tipo de error e incidencia, selecciona los registros que te interesen y genera un fichero con la misma estructura para cargarlo en tu programa de padrón. Todo se procesa en tu navegador &mdash; ningún dato sale de este equipo.</p>
+
+  <div class="panel">
+    <h2>1. Cargar ficheros</h2>
+    <label class="drop" id="drop">
+      <div>Arrastra aquí uno o varios ficheros de errores del INE, o haz clic para seleccionarlos.</div>
+      <div class="muted" style="margin-top:4px;font-size:12px">Se admite cualquier extensión (.A25, .txt, .maa&hellip;). Cada línea debe ser un registro de 704 caracteres (554 de datos + 150 de cola de errores).</div>
+      <input type="file" id="fileInput" multiple>
+    </label>
+    <div class="filelist" id="filelist"></div>
+    <div class="stats" id="stats" style="display:none"></div>
+  </div>
+
+  <div class="panel" id="filtersPanel" style="display:none">
+    <h2>2. Filtrar</h2>
+    <div class="filters">
+      <div class="field">
+        <label for="fSearch">Buscar (nombre, apellidos, NIA, documento)</label>
+        <input type="search" id="fSearch" placeholder="p.ej. GARCIA o 12345678A">
+      </div>
+      <div class="field">
+        <label for="fMun">Municipio</label>
+        <select id="fMun"><option value="">Todos</option></select>
+      </div>
+      <div class="field">
+        <label for="fTipoinf">Tipo de información</label>
+        <select id="fTipoinf">
+          <option value="">Todos</option>
+          <option value="R">R &mdash; Rechazado</option>
+          <option value="C">C &mdash; Cumplimentada/Comunicación</option>
+          <option value="">(en blanco)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fCvar">Código de variación (CVAR)</label>
+        <select id="fCvar">
+          <option value="">Todos</option>
+          <option value="A">A &mdash; Alta</option>
+          <option value="B">B &mdash; Baja</option>
+          <option value="M">M &mdash; Modificación</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fCauv">Causa de variación (CAUV)</label>
+        <select id="fCauv"><option value="">Todas</option></select>
+      </div>
+      <div class="field">
+        <label for="fCdev">Causa de devolución (CDEV)</label>
+        <select id="fCdev"><option value="">Todas</option></select>
+      </div>
+      <div class="field">
+        <label>Error/incidencia (cola de errores)</label>
+        <div class="codepicker">
+          <button type="button" class="codepicker-btn" id="codepickerBtn">Cualquiera</button>
+          <div class="codepicker-menu" id="codepickerMenu">
+            <input type="search" id="codeSearch" placeholder="Buscar código o texto&hellip;">
+            <div id="codeList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <div class="toggle"><input type="checkbox" id="fOnlyFlagged"><label for="fOnlyFlagged">Solo registros con alguna incidencia</label></div>
+      </div>
+    </div>
+    <div class="chips-active" id="activeCodeChips"></div>
+  </div>
+
+  <div class="panel" id="resultsPanel" style="display:none">
+    <div class="toolbar">
+      <div class="left">
+        <h2 style="margin:0">3. Seleccionar registros</h2>
+        <span class="badge-count" id="filteredCount">0 registros</span>
+        <span class="badge-count" id="selectedCount">0 seleccionados</span>
+      </div>
+      <div class="right">
+        <button class="btn" id="btnSelAll">Seleccionar todo lo filtrado</button>
+        <button class="btn" id="btnSelNone">Vaciar selección</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26px"></th>
+            <th>Municipio</th>
+            <th>Nombre y apellidos</th>
+            <th>NIA</th>
+            <th>Documento</th>
+            <th>CVAR</th>
+            <th>CAUV</th>
+            <th>FVAR</th>
+            <th>Tipo</th>
+            <th>CDEV</th>
+            <th>Incidencias</th>
+            <th>Fichero</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none">No hay registros que coincidan con los filtros.</div>
+    </div>
+    <div class="pager" id="pager"></div>
+
+    <div class="exportbar">
+      <h2 style="margin:0;flex-basis:100%">4. Generar fichero de salida</h2>
+      <input type="text" id="outName" placeholder="nombre_fichero_salida.txt">
+      <label class="toggle"><input type="checkbox" id="outCRLF" checked> Terminador de línea CRLF (estándar INE)</label>
+      <button class="btn primary" id="btnExport">Descargar fichero con la selección</button>
+      <span class="muted" id="exportHint"></span>
+    </div>
+  </div>
+
+  <footer>Procesamiento 100% local en el navegador. Diseño de registro: "Relación de Habitantes" (INE-Ayuntamientos) + cola de errores/incidencias de 150 posiciones.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Catálogo oficial de errores/incidencias (posición cola = código) ---------- */
+const ERROR_CATALOG = {"1":[{"tipoinf":"R","cdev":"IN","desc":"Código de provincia, CPRO, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"2":[{"tipoinf":"R","cdev":"IN","desc":"Código de municipio, CMUN, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"3":[{"tipoinf":"R","cdev":"IN","desc":"Nombre inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"4":[{"tipoinf":"R","cdev":"IN","desc":"Partícula primer Apellido inválida (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"5":[{"tipoinf":"R","cdev":"IN","desc":"Primer Apellido inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"6":[{"tipoinf":"R","cdev":"IN","desc":"Partícula segundo Apellido inválida (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"7":[{"tipoinf":"R","cdev":"IN","desc":"Segundo Apellido inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"8":[{"tipoinf":"R","cdev":"IN","desc":"Provincia nacimiento inválida (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"9":[{"tipoinf":"R","cdev":"IN","desc":"Municipio nacimiento inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"10":[{"tipoinf":"R","cdev":"IN","desc":"Fecha de nacimiento inválida (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"11":[{"tipoinf":"R","cdev":"IN","desc":"Tipo de identificador inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"12":[{"tipoinf":"R","cdev":"IN","desc":"Letra documento extranjero inválida (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"13":[{"tipoinf":"R","cdev":"IN","desc":"Identificador inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"14":[{"tipoinf":"R","cdev":"CO","desc":"Letra de control identificador inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"15":[{"tipoinf":"R","cdev":"IN","desc":"Número de documento inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"16":[{"tipoinf":"R","cdev":"IN","desc":"Número de Identificación Ayuntamiento inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"17":[{"tipoinf":"R","cdev":"CO","desc":"Número de Identificación Electoral inválido (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"18":[{"tipoinf":"R","cdev":"CO","desc":"Tipo de información, TIPOINF, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"19":[{"tipoinf":"R","cdev":"CO","desc":"Causa de Devolución, CDEV, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"20":[{"tipoinf":"R","cdev":"IN","desc":"Fecha de variación, FVAR, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"21":[{"tipoinf":"R","cdev":"IN","desc":"Código de variación, CVAR, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"22":[{"tipoinf":"R","cdev":"IN","desc":"Causa de variación, CAUV, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"23":[{"tipoinf":"R","cdev":"IN","desc":"Distrito, DIST, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"24":[{"tipoinf":"R","cdev":"IN","desc":"Sección, SECC, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"25":[{"tipoinf":"R","cdev":"IN","desc":"Letra de sección, LSECC, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"26":[{"tipoinf":"R","cdev":"DE","desc":"Código Unidad Poblacional, CUN, inexistente en el Nomenclátor","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Código Unidad Poblacional, CUN, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"27":[{"tipoinf":"R","cdev":"DE","desc":"Nombre Corto Entidad Colectiva, NENTCOC, inexistente en el Nomenclátor","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Nombre Corto Entidad Colectiva, NENTCOC, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"28":[{"tipoinf":"R","cdev":"DE","desc":"Nombre Corto Entidad Singular, NENTSIC, inexistente en el Nomenclátor","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Nombre Corto Entidad Singular, NENTSIC, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"29":[{"tipoinf":"R","cdev":"DE","desc":"Nombre Corto Núcleo|Diseminado, NNUCLEC, inexistente en el Nomenclátor","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Nombre Corto Núcleo|Diseminado, NNUCLEC, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"30":[{"tipoinf":"R","cdev":"DE","desc":"Código de Vía, CVIA, inexistente en el Callejero","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Código de Vía, CVIA, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"31":[{"tipoinf":"R","cdev":"DE","desc":"Tipo de Vía, TVIA, inexistente en el Callejero","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"32":[{"tipoinf":"R","cdev":"DE","desc":"Nombre Corto de Vía, NVIAC, inexistente en el Callejero","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"33":[{"tipoinf":"R","cdev":"DE","desc":"Código de Pseudovía, CPSVIA, inexistente en el Callejero","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Código de Pseudovía, CPSVIA,  inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"34":[{"tipoinf":"R","cdev":"DE","desc":"Nombre de Pseudovía, DPSVIA, inexistente en el Callejero","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"35":[{"tipoinf":"R","cdev":"CO","desc":"Tipo de Numeración, TINUM, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"36":[{"tipoinf":"R","cdev":"CO","desc":"Número, NUMER, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"37":[{"tipoinf":"R","cdev":"CO","desc":"Calificador del Número, CNUMER, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"38":[{"tipoinf":"R","cdev":"CO","desc":"Número superior, NUMERS, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"39":[{"tipoinf":"R","cdev":"CO","desc":"Calificador del Número superior, CNUMERS, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"40":[{"tipoinf":"R","cdev":"CO","desc":"Kilómetro, KMT, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"41":[{"tipoinf":"R","cdev":"CO","desc":"Hectómetro, HMT, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"42":[{"tipoinf":"R","cdev":"CO","desc":"Bloque, BLOQ, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"43":[{"tipoinf":"R","cdev":"CO","desc":"Portal, PORT, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"44":[{"tipoinf":"R","cdev":"CO","desc":"Escalera, ESCA, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"45":[{"tipoinf":"R","cdev":"CO","desc":"Planta, PLAN, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"46":[{"tipoinf":"R","cdev":"CO","desc":"Puerta, PUER, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"47":[{"tipoinf":"R","cdev":"CO","desc":"Tipo de Local, TLOC, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"48":[{"tipoinf":"R","cdev":"CO","desc":"Número de identificación del Ayuntamiento, NIA, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"49":[{"tipoinf":"R","cdev":"CO","desc":"Número de hoja padronal, NHOP, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"50":[{"tipoinf":"R","cdev":"CO","desc":"Número de identificación electoral, NIE, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"51":[{"tipoinf":"R","cdev":"DE","desc":"Nombre del habitante, NOMB,  inexistente en la Relación de nombres","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Nombre del habitante, NOMB, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"52":[{"tipoinf":"R","cdev":"IN","desc":"Partícula del primer apellido, PART1, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"53":[{"tipoinf":"R","cdev":"DE","desc":"Primer apellido, APE1, inexistente en la Relación de apellidos","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Primer apellido, APE1, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"54":[{"tipoinf":"R","cdev":"IN","desc":"Partícula del segundo apellido, PART2, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"55":[{"tipoinf":"R","cdev":"DE","desc":"Segundo apellido, APE2, inexistente en la Relación de apellidos","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Segundo apellido, APE2, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"56":[{"tipoinf":"R","cdev":"IN","desc":"Sexo, SEXO, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"57":[{"tipoinf":"R","cdev":"IN","desc":"Provincia de nacimiento, CPRON, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"58":[{"tipoinf":"R","cdev":"CO","desc":"Municipio|País de nacimiento, CMUNN, desconocido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"},{"tipoinf":"R","cdev":"IN","desc":"Municipio|País de nacimiento, CMUNN, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"59":[{"tipoinf":"R","cdev":"IN","desc":"Fecha de nacimiento, FNAC, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"60":[{"tipoinf":"R","cdev":"IN","desc":"Tipo de identificador, TIDEN, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"61":[{"tipoinf":"R","cdev":"IN","desc":"Letra Documento Extranjero, LEXTR, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"62":[{"tipoinf":"R","cdev":"IN","desc":"Identificador, IDEN, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"63":[{"tipoinf":"R","cdev":"IN","desc":"Letra de control del identificador, LIDEN, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"64":[{"tipoinf":"R","cdev":"IN","desc":"Número de documento, NDOCU, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"65":[{"tipoinf":"R","cdev":"CO","desc":"Código nivel de estudios, CNES, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"66":[{"tipoinf":"R","cdev":"IN","desc":"Código Nacionalidad, NACI, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"67":[{"tipoinf":"R","cdev":"CO","desc":"Provincia de destino|procedencia, PRDP, inválida","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"68":[{"tipoinf":"R","cdev":"CO","desc":"Municipio|País de destino|procedencia, MUDP, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"69":[{"tipoinf":"R","cdev":"CO","desc":"Consulado destino|procedencia, CODP, inválido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"70":[{"tipoinf":"R","cdev":"IN","desc":"Registro sin identificación suficiente","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"71":[{"tipoinf":"R","cdev":"GE","desc":"Alta ya existente en el municipio","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"72":[{"tipoinf":"R","cdev":"SC","desc":"Alta por nacimiento no encontrada en  Registro Civil","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"73":[{"tipoinf":"C","cdev":"CM","desc":"Alta con causa de variación errónea, alta por nacimiento (error deshabilitado)","accion":null,"rechazable":null,"afecta_cifras":null}],"74":[{"tipoinf":"C","cdev":"CM","desc":"Alta por cambio de residencia con municipio o consulado de procedencia erróneo","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"75":[{"tipoinf":"R","cdev":"GE","desc":"Baja no encontrada en el mismo municipio o BBC de NO_ENCSARP","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"76":[{"tipoinf":"C","cdev":"CM","desc":"Baja por cambio de residencia por Alta en el PERE","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"77":[{"tipoinf":"C","cdev":"SC","desc":"Baja por defunción no encontrada en Registro Civil","accion":"Consultar Normas tratamiento errores","rechazable":"SI","afecta_cifras":"SI"}],"78":[{"tipoinf":"R","cdev":"GE","desc":"Modificación no encontrada","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"DEPENDE"}],"79":[{"tipoinf":"R","cdev":"GE","desc":"Habitante con un movimiento pendiente de confirmación o rechazo","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"80":[{"tipoinf":"C","cdev":"RE","desc":"Baja por cambio de residencia pendiente de confirmación","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"81":[{"tipoinf":"C","cdev":"RE","desc":"Alta por nacimiento pendiente de confirmación","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"82":[{"tipoinf":"C","cdev":"RE","desc":"Baja por defunción pendiente de confirmación","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"83":[{"tipoinf":"R","cdev":"GE","desc":"Duplicado intramunicipal","accion":"Consultar Normas tratamiento errores","rechazable":"SI","afecta_cifras":"SI"}],"84":[{"tipoinf":"R","cdev":"GE","desc":"Duplicado intermunicipal","accion":"Consultar Normas tratamiento errores","rechazable":"NO*","afecta_cifras":"SI"}],"85":[{"tipoinf":null,"cdev":null,"desc":"Modificación RD pendiente de confirmación (incidencia no implantada)","accion":null,"rechazable":null,"afecta_cifras":null}],"86":[{"tipoinf":"C","cdev":"CM","desc":"Habitante no duplicado, baja por defunción","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"87":[{"tipoinf":"C","cdev":"CM","desc":"Habitante no duplicado ni fallecido, baja por II o por CR","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"88":[{"tipoinf":"C","cdev":"CM","desc":"Baja por cambio de residencia sin alta asociada","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"89":[{"tipoinf":"R","cdev":"GE","desc":"Habitante fallecido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"90":[{"tipoinf":null,"cdev":null,"desc":"Movimiento RD sin variación territorial asociada (incidencia no implantada)","accion":null,"rechazable":null,"afecta_cifras":null}],"91":[{"tipoinf":"C","cdev":"CM","desc":"Alta por omisión encontrada en otro municipio o consulado","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"92":[{"tipoinf":"R","cdev":"GE","desc":"Existe par alta-baja con la misma fecha de variación para el mismo habitante","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"93":[{"tipoinf":"R","cdev":"GE","desc":"No se ha efectuado ninguna reclamación que afecte a ese habitante o es una incidencia no rechazable","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"94":[{"tipoinf":"C","cdev":"CM","desc":"Baja por inscripción indebida o caducidad mal clasificada","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"95":[{"tipoinf":"C","cdev":"CM","desc":"Baja por cambio residencia con provincia-municipio|país consulado destino erróneo","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"96":[{"tipoinf":"R","cdev":"GE","desc":"Baja ya realizada","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"97":[{"tipoinf":"C","cdev":"CM","desc":"Baja por inclusión indebida de habitante fallecido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"98":[{"tipoinf":"C","cdev":"CM","desc":"Baja por cambio de residencia de habitante fallecido","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"99":[{"tipoinf":"R","cdev":"GE","desc":"Habitante con movimiento posterior al comunicado","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"DEPENDE"}],"100":[{"tipoinf":"C","cdev":"CM","desc":"Alta por cambio de residencia de habitante no existente en la base padronal del INE, ni en el PERE","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"101":[{"tipoinf":"C","cdev":"RE","desc":"Movimiento realizado por acuerdo del Consejo de Empadronamiento","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"102":[{"tipoinf":"C","cdev":"CM","desc":"Fecha de variación no correspondiente a ese movimiento","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"DEPENDE"}],"103":[{"tipoinf":"C","cdev":"CM","desc":"Cambio de datos personales comunicado por el Registro Civil","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"DEPENDE"}],"104":[{"tipoinf":"C","cdev":"CM","desc":"Alta por nacimiento con provincia-municipio de procedencia cumplimentados","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"105":[{"tipoinf":"C","cdev":"CM","desc":"Procesadas varias modificaciones a la misma fecha","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"106":[{"tipoinf":"C","cdev":"CM","desc":"Duplicado intermunicipal localizado como consecuencia de un alta en otro municipio","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI*"}],"107":[{"tipoinf":"R","cdev":"DE","desc":"El NIA figura repetido en el fichero padronal","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"111":[{"tipoinf":"C","cdev":"CM","desc":"Comunicación de la fecha de caducidad de la inscripción de los ENCSARP","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"112":[{"tipoinf":"C","cdev":"NO","desc":"Habitante no contabilizado en cifras por caducidad de la inscripción","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"113":[{"tipoinf":"C","cdev":"CM","desc":"Inscripción ENCSARP caducada más de 4 años","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"114":[{"tipoinf":"C","cdev":"CM","desc":"Baja por duplicado gestionada por la OCE","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"115":[{"tipoinf":"C","cdev":"CM","desc":"Baja por cambio de residencia por expulsión de extranjero ejecutada","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"116":[{"tipoinf":"C","cdev":"CM","desc":"Baja de extranjero (o familiar de) por retorno voluntario a su país de origen","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"117":[{"tipoinf":"C","cdev":"CM","desc":"Habitante duplicado con PERE","accion":"Consultar Normas tratamiento errores","rechazable":"NO*","afecta_cifras":"SI"}],"130":[{"tipoinf":"R","cdev":"DE","desc":"El SEXO en Padrón no coincide con el SEXO del DNI","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"131":[{"tipoinf":"R","cdev":"DE","desc":"Inconsistencia entre edad y nivel de estudios","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"132":[{"tipoinf":null,"cdev":null,"desc":"País de nacionalidad desaparecido (incidencia no implantada)","accion":null,"rechazable":null,"afecta_cifras":null}],"133":[{"tipoinf":null,"cdev":null,"desc":"NHOP distinto en una misma dirección (incidencia no implantada)","accion":null,"rechazable":null,"afecta_cifras":null}],"134":[{"tipoinf":null,"cdev":null,"desc":"NHOP correspondiente a varias direcciones (incidencia no implantada)","accion":null,"rechazable":null,"afecta_cifras":null}],"135":[{"tipoinf":"C","cdev":"CM","desc":"Actualización de DNI|NIEX comunicado por el Ministerio del Interior","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"136":[{"tipoinf":"R","cdev":"DE","desc":"Error en DNI|NIEX comunicado por el Ministerio del Interior","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"137":[{"tipoinf":"C","cdev":"CM","desc":"Comunicación de DNI expedido por adquisición de nacionalidad española por el Ministerio del Interior","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"138":[{"tipoinf":"C","cdev":"CM","desc":"Fecha de nacimiento distinta FNAC_DNI / FNAC_NIEX","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"139":[{"tipoinf":"R","cdev":"DE","desc":"Comunicación NIEX Inscripción Registro Central de Extranjeros (comunitarios y asimilados)","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"140":[{"tipoinf":"C","cdev":"CM","desc":"Actualización del nivel de estudios, CNES, comunicada por el Ministerio de Educación","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}],"141":[{"tipoinf":"C","cdev":"CM","desc":"Comprobación residencia NO_ENCSARP NO inscrito en el RCE","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"142":[{"tipoinf":"C","cdev":"CM","desc":"Comprobación residencia NO_ENCSARP. Tarjeta de residencia expedida hace más de 5 años","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"143":[{"tipoinf":"C","cdev":"CM","desc":"Comprobación residencia NO ENCSARP. Certificado de comunitario expedido hace más de 5 años","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"144":[{"tipoinf":"C","cdev":"CM","desc":"Habitante español mayor de 16 años que NO figura en la base de datos de DNIs","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"SI"}],"146":[{"tipoinf":"C","cdev":"CM","desc":"Indicador de permanencia","accion":"Consultar Normas tratamiento errores","rechazable":"NO","afecta_cifras":"NO"}]};
+
+/* ---------- Diseño de registro "Relación de Habitantes" (554 + 150) ---------- */
+const FIELDS = [
+["CPRO_id",0,2],["CMUN_id",2,3],["NOMB_id",5,20],["PART1_id",25,6],["APE1_id",31,25],["PART2_id",56,6],["APE2_id",62,25],
+["CPRON_id",87,2],["CMUNN_id",89,3],["FNAC_id",92,8],["TIDEN_id",100,1],["LEXTR_id",101,1],["IDEN_id",102,8],["LIDEN_id",110,1],
+["NDOCU_id",111,20],["NIA_id",131,15],["NIE_id",146,11],
+["TIPOINF",157,1],["CDEV",158,2],["FVAR",160,8],["CVAR",168,1],["CAUV",169,2],
+["DIST",171,2],["SECC",173,3],["LSECC",176,1],["CUN",177,7],["NENTCOC",184,25],["NENTSIC",209,25],["NNUCLEC",234,25],
+["CVIA",259,5],["TVIA",264,5],["NVIAC",269,25],["CPSVIA",294,5],["DPSVIA",299,50],["TINUM",349,1],
+["NUMER",350,4],["CNUMER",354,1],["NUMERS",355,4],["CNUMERS",359,1],["KMT",360,3],["HMT",363,1],
+["BLOQ",364,2],["PORT",366,2],["ESCA",368,2],["PLAN",370,3],["PUER",373,4],["TLOC",377,1],
+["NIA_var",378,15],["NHOP",393,10],["NIE_var",403,11],["NOMB_var",414,20],["PART1_var",434,6],["APE1_var",440,25],
+["PART2_var",465,6],["APE2_var",471,25],["SEXO",496,1],["CPRON_var",497,2],["CMUNN_var",499,3],["FNAC_var",502,8],
+["TIDEN_var",510,1],["LEXTR_var",511,1],["IDEN_var",512,8],["LIDEN_var",520,1],["NDOCU_var",521,20],
+["CNES",541,2],["NACI",543,3],["PRDP",546,2],["MUDP",548,3],["CODP",551,3]
+];
+const DATA_LEN = 554, TAIL_LEN = 150, TOTAL_LEN = 704;
+
+function splitLines(text){
+  // normaliza saltos de línea sin perder líneas vacías intermedias no deseadas
+  const raw = text.split(/\r\n|\r|\n/);
+  while(raw.length && raw[raw.length-1] === "") raw.pop();
+  return raw;
+}
+
+function parseRecord(rawLine, sourceFile, lineNo){
+  let line = rawLine;
+  let issue = null;
+  if(line.length < DATA_LEN){
+    issue = "corta";
+    line = line.padEnd(DATA_LEN, " ");
+  }
+  if(line.length < TOTAL_LEN){
+    if(issue === null && line.length > DATA_LEN) issue = null;
+    line = line.padEnd(TOTAL_LEN, ".");
+  } else if(line.length > TOTAL_LEN){
+    issue = "larga";
+  }
+  const f = {};
+  for(const [name,start,len] of FIELDS){
+    f[name] = line.substr(start,len);
+  }
+  const tail = line.substr(DATA_LEN, TAIL_LEN);
+  const codes = [];
+  for(let i=0;i<TAIL_LEN;i++){
+    const ch = tail[i];
+    if(ch && ch !== "." && ch !== " "){
+      codes.push({code: i+1, marker: ch});
+    }
+  }
+  const cvar = f.CVAR.trim();
+  const nombreVar = buildName(f.NOMB_var, f.PART1_var, f.APE1_var, f.PART2_var, f.APE2_var);
+  const nombreId = buildName(f.NOMB_id, f.PART1_id, f.APE1_id, f.PART2_id, f.APE2_id);
+  const nombre = nombreVar || nombreId;
+  const doc = pickDoc(f.TIDEN_var, f.LEXTR_var, f.IDEN_var, f.LIDEN_var, f.NDOCU_var) ||
+              pickDoc(f.TIDEN_id, f.LEXTR_id, f.IDEN_id, f.LIDEN_id, f.NDOCU_id);
+  const nia = (f.NIA_var.trim() || f.NIA_id.trim());
+  const cpro = f.CPRO_id.trim(), cmun = f.CMUN_id.trim();
+  return {
+    raw: rawLine, source: sourceFile, lineNo, issue,
+    f, codes, cvar, cauv: f.CAUV.trim(), tipoinf: f.TIPOINF.trim(), cdev: f.CDEV.trim(),
+    fvar: f.FVAR.trim(), nombre, doc, nia, cpro, cmun,
+    municipio: (cpro||"--")+"-"+(cmun||"---"),
+    selected: false
+  };
+}
+
+function buildName(nomb,part1,ape1,part2,ape2){
+  nomb=(nomb||"").trim(); part1=(part1||"").trim(); ape1=(ape1||"").trim(); part2=(part2||"").trim(); ape2=(ape2||"").trim();
+  const a1 = [part1,ape1].filter(Boolean).join(" ");
+  const a2 = [part2,ape2].filter(Boolean).join(" ");
+  return [nomb,a1,a2].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+}
+function pickDoc(tiden,lextr,iden,liden,ndocu){
+  ndocu=(ndocu||"").trim(); iden=(iden||"").trim(); lextr=(lextr||"").trim(); liden=(liden||"").trim();
+  if(ndocu) return ndocu;
+  if(iden && /[1-9]/.test(iden)) return (lextr?lextr:"")+iden+(liden?liden:"");
+  return "";
+}
+function formatFecha(v){
+  if(!v || v.length!==8 || !/^\d{8}$/.test(v)) return v || "";
+  return v.substr(6,2)+"/"+v.substr(4,2)+"/"+v.substr(0,4);
+}
+function codeVariant(code, recordCdev){
+  const variants = ERROR_CATALOG[String(code)];
+  if(!variants || !variants.length) return null;
+  if(recordCdev){
+    const m = variants.find(v => v.cdev === recordCdev);
+    if(m) return m;
+  }
+  return variants[0];
+}
+function codeShortLabel(code, recordCdev){
+  const v = codeVariant(code, recordCdev);
+  if(!v) return "#"+code+" (sin descripción en catálogo)";
+  return v.desc;
+}
+
+/* ---------- Estado ---------- */
+let files = [];   // {name, size, records:[], error?:string}
+let allRecords = [];
+let filtered = [];
+let selectedCodeFilters = new Set();
+let expandedRow = null;
+let page = 1;
+const PAGE_SIZE = 150;
+
+/* ---------- Carga de ficheros ---------- */
+const fileInput = document.getElementById("fileInput");
+const drop = document.getElementById("drop");
+drop.addEventListener("dragover", e=>{ e.preventDefault(); drop.classList.add("drag"); });
+drop.addEventListener("dragleave", ()=> drop.classList.remove("drag"));
+drop.addEventListener("drop", e=>{
+  e.preventDefault(); drop.classList.remove("drag");
+  if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener("change", e=> handleFiles(e.target.files));
+drop.addEventListener("click", e=>{ if(e.target.tagName!=="INPUT") fileInput.click(); });
+
+function handleFiles(fileListObj){
+  const list = Array.from(fileListObj);
+  let pending = list.length;
+  list.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      addFile(file.name, file.size, reader.result);
+      pending--; if(pending===0){ fileInput.value=""; rebuild(); }
+    };
+    reader.onerror = ()=>{
+      files.push({name:file.name, size:file.size, records:[], error:"No se pudo leer el fichero"});
+      pending--; if(pending===0){ fileInput.value=""; rebuild(); }
+    };
+    reader.readAsText(file, "iso-8859-15");
+  });
+}
+
+function addFile(name, size, text){
+  const lines = splitLines(text);
+  const records = [];
+  let shortCount = 0;
+  lines.forEach((line, idx)=>{
+    if(!line.trim()) return;
+    const rec = parseRecord(line, name, idx+1);
+    if(rec.issue === "corta") shortCount++;
+    records.push(rec);
+  });
+  files.push({name, size, records, shortCount});
+  renderFileList();
+}
+
+function removeFile(name){
+  files = files.filter(f=>f.name!==name);
+  renderFileList();
+  rebuild();
+}
+
+function renderFileList(){
+  const el = document.getElementById("filelist");
+  el.innerHTML = "";
+  files.forEach(f=>{
+    const chip = document.createElement("div");
+    chip.className = "filechip";
+    const warn = f.error ? `<span class="warn">${f.error}</span>` :
+      (f.shortCount ? `<span class="warn">${f.shortCount} línea(s) más corta(s) de lo esperado</span>` : `${f.records.length} registros`);
+    chip.innerHTML = `<b>${escapeHtml(f.name)}</b><span class="muted">&middot; ${warn}</span>`;
+    const btn = document.createElement("button");
+    btn.textContent = "×";
+    btn.title = "Quitar fichero";
+    btn.onclick = ()=> removeFile(f.name);
+    chip.appendChild(btn);
+    el.appendChild(chip);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- Reconstrucción de índices / selects tras cargar ---------- */
+function rebuild(){
+  allRecords = [];
+  files.forEach(f=> allRecords.push(...f.records));
+
+  const hasData = allRecords.length>0;
+  document.getElementById("filtersPanel").style.display = hasData ? "" : "none";
+  document.getElementById("resultsPanel").style.display = hasData ? "" : "none";
+  document.getElementById("stats").style.display = hasData ? "" : "none";
+
+  if(!hasData){ renderStats(); applyFilters(); return; }
+
+  fillSelect("fMun", uniqueSorted(allRecords.map(r=>r.municipio)), v=>v);
+  fillSelect("fCauv", uniqueSorted(allRecords.map(r=>r.cauv).filter(Boolean)), v=>v+cauvLabel(v));
+  fillSelect("fCdev", uniqueSorted(allRecords.map(r=>r.cdev).filter(Boolean)), v=>v+cdevLabel(v));
+  buildCodePicker();
+  renderStats();
+  applyFilters();
+}
+
+const CAUV_LABELS = {OM:" · Alta por Omisión",CR:" · Cambio de Residencia",NA:" · Alta por Nacimiento",DE:" · Baja por Defunción",
+  II:" · Baja por Inclusión Indebida",DU:" · Baja por Duplicado",BC:" · Baja por Caducidad",PE:" · Modif. Datos Personales",
+  RD:" · Rectificación Territorial",CD:" · Cambio de Domicilio",RN:" · Renovación",CO:" · Confirmación de Residencia"};
+const CDEV_LABELS = {IN:" · Invalidante",CO:" · Contraste",DE:" · Depuración",GE:" · Gestión",CM:" · Comunicación",
+  RE:" · Reclamación",SC:" · Sin confirmación",CG:" · Contraste y gestión",CC:" · Comunicaciones y errores",NO:" · Sin clasificar"};
+function cauvLabel(v){ return CAUV_LABELS[v]||""; }
+function cdevLabel(v){ return CDEV_LABELS[v]||""; }
+
+function uniqueSorted(arr){ return Array.from(new Set(arr)).sort(); }
+function fillSelect(id, values, labelFn){
+  const sel = document.getElementById(id);
+  const current = sel.value;
+  sel.innerHTML = `<option value="">Todos</option>`;
+  values.forEach(v=>{
+    const opt = document.createElement("option");
+    opt.value = v; opt.textContent = labelFn(v);
+    sel.appendChild(opt);
+  });
+  if(values.includes(current)) sel.value = current;
+}
+
+function renderStats(){
+  const el = document.getElementById("stats");
+  const nFiles = files.length, nRec = allRecords.length;
+  const nFlag = allRecords.filter(r=>r.codes.length>0).length;
+  el.innerHTML = `<div><b>${nFiles}</b> fichero(s)</div><div><b>${nRec}</b> registros cargados</div><div><b>${nFlag}</b> con alguna incidencia marcada</div>`;
+}
+
+/* ---------- Selector de códigos de error ---------- */
+function buildCodePicker(){
+  const codesPresent = new Map();
+  allRecords.forEach(r=> r.codes.forEach(c=>{
+    if(!codesPresent.has(c.code)) codesPresent.set(c.code, 0);
+    codesPresent.set(c.code, codesPresent.get(c.code)+1);
+  }));
+  const list = document.getElementById("codeList");
+  const codes = Array.from(codesPresent.keys()).sort((a,b)=>a-b);
+  list.innerHTML = "";
+  codes.forEach(code=>{
+    const variant = codeVariant(code, null);
+    const desc = variant ? variant.desc : "(sin descripción)";
+    const cdev = variant ? variant.cdev : "";
+    const row = document.createElement("label");
+    row.className = "code-opt";
+    row.innerHTML = `<input type="checkbox" value="${code}" style="margin-top:2px">
+      <span class="n">#${code}</span>
+      <span class="d">${escapeHtml(desc)} <span class="badge-cdev">(${codesPresent.get(code)}${cdev?", "+cdev:""})</span></span>`;
+    const input = row.querySelector("input");
+    input.checked = selectedCodeFilters.has(code);
+    input.addEventListener("change", ()=>{
+      if(input.checked) selectedCodeFilters.add(code); else selectedCodeFilters.delete(code);
+      updateCodePickerButton(); renderActiveChips(); applyFilters();
+    });
+    list.appendChild(row);
+  });
+  updateCodePickerButton();
+}
+document.getElementById("codeSearch").addEventListener("input", e=>{
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll("#codeList .code-opt").forEach(row=>{
+    row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+  });
+});
+function updateCodePickerButton(){
+  const btn = document.getElementById("codepickerBtn");
+  btn.textContent = selectedCodeFilters.size ? `${selectedCodeFilters.size} código(s) seleccionados` : "Cualquiera";
+}
+function renderActiveChips(){
+  const el = document.getElementById("activeCodeChips");
+  el.innerHTML = "";
+  Array.from(selectedCodeFilters).sort((a,b)=>a-b).forEach(code=>{
+    const variant = codeVariant(code, null);
+    const chip = document.createElement("div");
+    chip.className = "chip-active";
+    chip.innerHTML = `<span>#${code} ${escapeHtml(variant?variant.desc.slice(0,40):"")}</span>`;
+    const btn = document.createElement("button");
+    btn.textContent = "×";
+    btn.onclick = ()=>{
+      selectedCodeFilters.delete(code);
+      const cb = document.querySelector(`#codeList input[value="${code}"]`);
+      if(cb) cb.checked = false;
+      updateCodePickerButton(); renderActiveChips(); applyFilters();
+    };
+    chip.appendChild(btn);
+    el.appendChild(chip);
+  });
+}
+document.getElementById("codepickerBtn").addEventListener("click", ()=>{
+  document.getElementById("codepickerMenu").classList.toggle("open");
+});
+document.addEventListener("click", e=>{
+  const wrap = document.querySelector(".codepicker");
+  if(wrap && !wrap.contains(e.target)) document.getElementById("codepickerMenu").classList.remove("open");
+});
+
+/* ---------- Filtros ---------- */
+["fSearch","fMun","fTipoinf","fCvar","fCauv","fCdev"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", ()=>{ page=1; applyFilters(); });
+  document.getElementById(id).addEventListener("change", ()=>{ page=1; applyFilters(); });
+});
+document.getElementById("fOnlyFlagged").addEventListener("change", ()=>{ page=1; applyFilters(); });
+
+function applyFilters(){
+  const q = document.getElementById("fSearch").value.trim().toLowerCase();
+  const mun = document.getElementById("fMun").value;
+  const tipoinf = document.getElementById("fTipoinf").value;
+  const cvar = document.getElementById("fCvar").value;
+  const cauv = document.getElementById("fCauv").value;
+  const cdev = document.getElementById("fCdev").value;
+  const onlyFlagged = document.getElementById("fOnlyFlagged").checked;
+
+  filtered = allRecords.filter(r=>{
+    if(mun && r.municipio!==mun) return false;
+    if(tipoinf && r.tipoinf!==tipoinf) return false;
+    if(cvar && r.cvar!==cvar) return false;
+    if(cauv && r.cauv!==cauv) return false;
+    if(cdev && r.cdev!==cdev) return false;
+    if(onlyFlagged && r.codes.length===0) return false;
+    if(selectedCodeFilters.size){
+      const codes = new Set(r.codes.map(c=>c.code));
+      let any=false;
+      for(const c of selectedCodeFilters){ if(codes.has(c)){ any=true; break; } }
+      if(!any) return false;
+    }
+    if(q){
+      const hay = (r.nombre+" "+r.doc+" "+r.nia).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  renderTable();
+}
+
+/* ---------- Tabla ---------- */
+function renderTable(){
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = "";
+  document.getElementById("emptyMsg").style.display = filtered.length ? "none" : "";
+  document.getElementById("filteredCount").textContent = filtered.length + " registros";
+  document.getElementById("selectedCount").textContent = allRecords.filter(r=>r.selected).length + " seleccionados";
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if(page>totalPages) page = totalPages;
+  const start = (page-1)*PAGE_SIZE;
+  const pageItems = filtered.slice(start, start+PAGE_SIZE);
+
+  pageItems.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.className = r.selected ? "sel" : "";
+    const cvarPill = r.cvar ? `<span class="pill pill-${r.cvar}">${r.cvar}</span>` : "";
+    const codesHtml = r.codes.length ? `<div class="codes">` + r.codes.map(c=>{
+        const v = codeVariant(c.code, r.cdev);
+        const title = v ? `#${c.code} (${v.cdev||""}): ${v.desc}` : `#${c.code}`;
+        return `<span class="codebadge ${r.tipoinf==='R'?'tipR':''}" title="${escapeHtml(title)}">${c.code}${c.marker!=='X'?c.marker:''}</span>`;
+      }).join("") + `</div>` : `<span class="muted">&mdash;</span>`;
+    tr.innerHTML = `
+      <td><input type="checkbox" class="rowchk" ${r.selected?"checked":""}></td>
+      <td class="mono">${escapeHtml(r.municipio)}</td>
+      <td class="name-cell">${escapeHtml(r.nombre)||'<span class="muted">(sin nombre)</span>'}</td>
+      <td class="mono">${escapeHtml(r.nia)}</td>
+      <td class="mono">${escapeHtml(r.doc)}</td>
+      <td>${cvarPill}</td>
+      <td class="mono">${escapeHtml(r.cauv)}</td>
+      <td class="mono">${formatFecha(r.fvar)}</td>
+      <td class="mono">${escapeHtml(r.tipoinf)}</td>
+      <td class="mono">${escapeHtml(r.cdev)}</td>
+      <td>${codesHtml}</td>
+      <td class="muted" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.source)}">${escapeHtml(r.source)}</td>
+    `;
+    tr.querySelector(".rowchk").addEventListener("change", e=>{
+      r.selected = e.target.checked;
+      tr.classList.toggle("sel", r.selected);
+      document.getElementById("selectedCount").textContent = allRecords.filter(x=>x.selected).length + " seleccionados";
+    });
+    if(r.codes.length){
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", e=>{
+        if(e.target.type==="checkbox") return;
+        toggleDetail(r, tr);
+      });
+    }
+    tbody.appendChild(tr);
+  });
+
+  renderPager(totalPages);
+}
+
+function toggleDetail(r, tr){
+  const next = tr.nextSibling;
+  if(next && next.classList && next.classList.contains("rowdetail")){
+    next.remove();
+    return;
+  }
+  document.querySelectorAll(".rowdetail").forEach(n=>n.remove());
+  const detail = document.createElement("tr");
+  detail.className = "rowdetail";
+  const td = document.createElement("td");
+  td.colSpan = 12;
+  td.innerHTML = r.codes.map(c=>{
+    const v = codeVariant(c.code, r.cdev);
+    if(!v) return `<div class="detail-code"><div class="hd">#${c.code} ${c.marker!=='X'?'('+c.marker+')':''}</div><div class="accion">Sin descripción en el catálogo cargado.</div></div>`;
+    return `<div class="detail-code">
+      <div class="hd">#${c.code} &mdash; ${escapeHtml(v.desc)} <span class="muted">[${v.tipoinf||"?"}/${v.cdev||"?"}]</span></div>
+      ${v.accion?`<div class="accion">Actuación: ${escapeHtml(v.accion)}${v.rechazable?` &middot; Rechazable: ${v.rechazable}`:""}${v.afecta_cifras?` &middot; Afecta a cifras: ${v.afecta_cifras}`:""}</div>`:""}
+    </div>`;
+  }).join("");
+  detail.appendChild(td);
+  tr.parentNode.insertBefore(detail, tr.nextSibling);
+}
+
+function renderPager(totalPages){
+  const el = document.getElementById("pager");
+  if(totalPages<=1){ el.innerHTML=""; return; }
+  el.innerHTML = "";
+  const mkBtn = (label, disabled, fn)=>{
+    const b = document.createElement("button");
+    b.className="btn"; b.textContent=label; b.disabled=disabled;
+    b.onclick=fn; return b;
+  };
+  el.appendChild(mkBtn("‹ Anterior", page<=1, ()=>{ page--; renderTable(); }));
+  const span = document.createElement("span");
+  span.textContent = `Página ${page} de ${totalPages}`;
+  el.appendChild(span);
+  el.appendChild(mkBtn("Siguiente ›", page>=totalPages, ()=>{ page++; renderTable(); }));
+}
+
+/* ---------- Selección masiva ---------- */
+document.getElementById("btnSelAll").addEventListener("click", ()=>{
+  filtered.forEach(r=> r.selected = true);
+  renderTable();
+});
+document.getElementById("btnSelNone").addEventListener("click", ()=>{
+  allRecords.forEach(r=> r.selected = false);
+  renderTable();
+});
+
+/* ---------- Exportación ---------- */
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const selected = allRecords.filter(r=>r.selected);
+  if(!selected.length){ alert("No hay ningún registro seleccionado."); return; }
+  const useCRLF = document.getElementById("outCRLF").checked;
+  const eol = useCRLF ? "\r\n" : "\n";
+  const body = selected.map(r=>r.raw).join(eol) + eol;
+  let name = document.getElementById("outName").value.trim();
+  if(!name) name = suggestName(selected);
+  const blob = new Blob([body], {type:"text/plain;charset=iso-8859-15"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+function suggestName(selected){
+  const muns = uniqueSorted(selected.map(r=>r.municipio));
+  if(muns.length===1){
+    const [cpro,cmun] = muns[0].split("-");
+    return `H${cpro}${cmun}_seleccion.txt`;
+  }
+  return "seleccion_padron.txt";
+}
+document.getElementById("outName").addEventListener("focus", function(){
+  if(!this.value){
+    const selected = allRecords.filter(r=>r.selected);
+    this.value = selected.length ? suggestName(selected) : "";
+  }
+});
+
+rebuild();
+</script>
+</body>
+</html>
