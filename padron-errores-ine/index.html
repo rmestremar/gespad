@@ -34,9 +34,10 @@ h1{font-size:20px;margin:0 0 2px}
 .subtitle{color:var(--muted);margin:0 0 18px;font-size:13px}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 12px}
-.drop{border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s, background .15s}
+.drop{display:block;border:2px dashed var(--border);border-radius:10px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s, background .15s}
 .drop:hover,.drop.drag{border-color:var(--accent);background:var(--row-hover)}
 .drop input{display:none}
+.drop p{margin:0 0 4px}
 .filelist{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
 .filechip{display:flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:5px 6px 5px 12px;font-size:12.5px}
 .filechip b{font-weight:600}
@@ -111,11 +112,11 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
 
   <div class="panel">
     <h2>1. Cargar ficheros</h2>
-    <label class="drop" id="drop">
-      <div>Arrastra aquí uno o varios ficheros de errores del INE, o haz clic para seleccionarlos.</div>
-      <div class="muted" style="margin-top:4px;font-size:12px">Se admite cualquier extensión (.A25, .txt, .maa&hellip;). Cada línea debe ser un registro de 704 caracteres (554 de datos + 150 de cola de errores).</div>
+    <div class="drop" id="drop">
+      <p>Arrastra aquí uno o varios ficheros de errores del INE, o haz clic para seleccionarlos.</p>
+      <p class="muted" style="margin-top:4px;font-size:12px">Se admite cualquier extensión (.A25, .txt, .maa&hellip;). Cada línea debe ser un registro de 704 caracteres (554 de datos + 150 de cola de errores).</p>
       <input type="file" id="fileInput" multiple>
-    </label>
+    </div>
     <div class="filelist" id="filelist"></div>
     <div class="stats" id="stats" style="display:none"></div>
   </div>
@@ -345,7 +346,7 @@ drop.addEventListener("drop", e=>{
   if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
 });
 fileInput.addEventListener("change", e=> handleFiles(e.target.files));
-drop.addEventListener("click", e=>{ if(e.target.tagName!=="INPUT") fileInput.click(); });
+drop.addEventListener("click", ()=> fileInput.click());
 
 function handleFiles(fileListObj){
   const list = Array.from(fileListObj);
