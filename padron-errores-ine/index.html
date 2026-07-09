@@ -103,12 +103,33 @@ tbody tr.sel{background:color-mix(in srgb, var(--accent) 14%, transparent)}
 footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
 .toggle{display:flex;align-items:center;gap:6px;font-size:13px}
 .badge-count{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:12px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tabbtn{padding:10px 16px;border:1px solid var(--border);background:var(--panel);border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--muted)}
+.tabbtn:hover{background:var(--row-hover)}
+.tabbtn.active{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+.breakdown{display:flex;flex-wrap:wrap;gap:12px}
+.bgroup{border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:220px;flex:1}
+.bgroup h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);cursor:pointer;display:inline-block}
+.bgroup h3:hover{color:var(--accent)}
+.bgroup .total{font-size:26px;font-weight:700;margin-bottom:8px}
+.bchips{display:flex;flex-wrap:wrap;gap:6px}
+.bchip{display:inline-flex;gap:5px;align-items:center;background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.bchip:hover{background:var(--row-hover);border-color:var(--accent)}
+.bchip b{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Filtro de errores/incidencias INE &mdash; Padrón</h1>
-  <p class="subtitle">Carga ficheros de devolución del INE (Relación de Habitantes, formato H*.A??), filtra por tipo de error e incidencia, selecciona los registros que te interesen y genera un fichero con la misma estructura para cargarlo en tu programa de padrón. Todo se procesa en tu navegador &mdash; ningún dato sale de este equipo.</p>
+  <h1>Padrón &mdash; INE</h1>
+  <p class="subtitle">Trabaja con los ficheros de intercambio INE-Ayuntamientos de la Relación de Habitantes: revisa las devoluciones de errores/incidencias, o filtra y selecciona las variaciones (altas, bajas, modificaciones) que quieras enviar. Todo se procesa en tu navegador &mdash; ningún dato sale de este equipo.</p>
+
+  <div class="tabs">
+    <button type="button" class="tabbtn active" id="tabBtnErrores">📥 Fichero de errores/incidencias (recibido del INE)</button>
+    <button type="button" class="tabbtn" id="tabBtnVariaciones">📤 Fichero de variaciones (a enviar al INE)</button>
+  </div>
+
+  <div id="tabErrores" class="tabpanel">
+  <p class="subtitle">Carga ficheros de devolución del INE (Relación de Habitantes, formato H*.A??), filtra por tipo de error e incidencia, selecciona los registros que te interesen y genera un fichero con la misma estructura para cargarlo en tu programa de padrón.</p>
 
   <div class="panel">
     <h2>1. Cargar ficheros</h2>
@@ -222,6 +243,97 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
   </div>
 
   <footer>Procesamiento 100% local en el navegador. Diseño de registro: "Relación de Habitantes" (INE-Ayuntamientos) + cola de errores/incidencias de 150 posiciones.</footer>
+  </div>
+
+  <div id="tabVariaciones" class="tabpanel" style="display:none">
+    <p class="subtitle">Carga el fichero de variaciones (altas, bajas y modificaciones) que vas a enviar al INE &mdash; sin cola de errores, 554 caracteres por registro &mdash;, revisa cuántas hay de cada tipo, selecciona las que quieras y genera un fichero nuevo con la misma estructura solo con esa selección.</p>
+
+    <div class="panel">
+      <h2>1. Cargar fichero de variaciones</h2>
+      <div class="drop" id="vDrop">
+        <p>Arrastra aquí uno o varios ficheros de variaciones a enviar al INE, o haz clic para seleccionarlos.</p>
+        <p class="muted" style="margin-top:4px;font-size:12px">Fichero de Relación de Habitantes sin cola de errores: cada línea debe ser un registro de 554 caracteres. Si el fichero trae cola de errores igualmente se carga, pero esta pestaña no la utiliza.</p>
+        <input type="file" id="vFileInput" multiple>
+      </div>
+      <div class="filelist" id="vFilelist"></div>
+      <div class="stats" id="vStats" style="display:none"></div>
+    </div>
+
+    <div class="panel" id="vBreakdownPanel" style="display:none">
+      <h2>2. Resumen de variaciones</h2>
+      <div class="breakdown" id="vBreakdown"></div>
+    </div>
+
+    <div class="panel" id="vFiltersPanel" style="display:none">
+      <h2>3. Filtrar</h2>
+      <div class="filters">
+        <div class="field">
+          <label for="vSearch">Buscar (nombre, apellidos, NIA, documento)</label>
+          <input type="search" id="vSearch" placeholder="p.ej. GARCIA o 12345678A">
+        </div>
+        <div class="field">
+          <label for="vMun">Municipio</label>
+          <select id="vMun"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label for="vCvar">Código de variación (CVAR)</label>
+          <select id="vCvar">
+            <option value="">Todos</option>
+            <option value="A">A &mdash; Alta</option>
+            <option value="B">B &mdash; Baja</option>
+            <option value="M">M &mdash; Modificación</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="vCauv">Causa de variación (CAUV)</label>
+          <select id="vCauv"><option value="">Todas</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="vResultsPanel" style="display:none">
+      <div class="toolbar">
+        <div class="left">
+          <h2 style="margin:0">4. Seleccionar registros</h2>
+          <span class="badge-count" id="vFilteredCount">0 registros</span>
+          <span class="badge-count" id="vSelectedCount">0 seleccionados</span>
+        </div>
+        <div class="right">
+          <button class="btn" id="vBtnSelAll">Seleccionar todo lo filtrado</button>
+          <button class="btn" id="vBtnSelNone">Vaciar selección</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:26px"></th>
+              <th>Municipio</th>
+              <th>Nombre y apellidos</th>
+              <th>NIA</th>
+              <th>Documento</th>
+              <th>CVAR</th>
+              <th>CAUV</th>
+              <th>FVAR</th>
+              <th>Fichero</th>
+            </tr>
+          </thead>
+          <tbody id="vTbody"></tbody>
+        </table>
+        <div class="empty" id="vEmptyMsg" style="display:none">No hay registros que coincidan con los filtros.</div>
+      </div>
+      <div class="pager" id="vPager"></div>
+
+      <div class="exportbar">
+        <h2 style="margin:0;flex-basis:100%">5. Generar fichero de salida</h2>
+        <input type="text" id="vOutName" placeholder="nombre_fichero_salida.txt">
+        <label class="toggle"><input type="checkbox" id="vOutCRLF" checked> Terminador de línea CRLF (estándar INE)</label>
+        <button class="btn primary" id="vBtnExport">Descargar fichero con la selección</button>
+      </div>
+    </div>
+
+    <footer>Procesamiento 100% local en el navegador. Diseño de registro: "Relación de Habitantes" (INE-Ayuntamientos), fichero de variaciones sin cola de errores (554 posiciones).</footer>
+  </div>
 </div>
 
 <script>
@@ -695,6 +807,275 @@ document.getElementById("outName").addEventListener("focus", function(){
 });
 
 rebuild();
+
+/* ================== Fichero de variaciones (sin cola de errores) ================== */
+let vFiles = [];
+let vAllRecords = [];
+let vFiltered = [];
+let vPage = 1;
+const V_PAGE_SIZE = 150;
+
+const vFileInput = document.getElementById("vFileInput");
+const vDrop = document.getElementById("vDrop");
+vDrop.addEventListener("dragover", e=>{ e.preventDefault(); vDrop.classList.add("drag"); });
+vDrop.addEventListener("dragleave", ()=> vDrop.classList.remove("drag"));
+vDrop.addEventListener("drop", e=>{
+  e.preventDefault(); vDrop.classList.remove("drag");
+  if(e.dataTransfer.files.length) vHandleFiles(e.dataTransfer.files);
+});
+vFileInput.addEventListener("change", e=> vHandleFiles(e.target.files));
+vDrop.addEventListener("click", ()=> vFileInput.click());
+
+function vHandleFiles(fileListObj){
+  const list = Array.from(fileListObj);
+  let pending = list.length;
+  list.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      vAddFile(file.name, file.size, reader.result);
+      pending--; if(pending===0){ vFileInput.value=""; vRebuild(); }
+    };
+    reader.onerror = ()=>{
+      vFiles.push({name:file.name, size:file.size, records:[], error:"No se pudo leer el fichero"});
+      pending--; if(pending===0){ vFileInput.value=""; vRebuild(); }
+    };
+    reader.readAsText(file, "iso-8859-15");
+  });
+}
+
+function vAddFile(name, size, text){
+  const lines = splitLines(text);
+  const records = [];
+  let shortCount = 0;
+  lines.forEach((line, idx)=>{
+    if(!line.trim()) return;
+    const rec = parseRecord(line, name, idx+1);
+    if(rec.issue === "corta") shortCount++;
+    records.push(rec);
+  });
+  vFiles.push({name, size, records, shortCount});
+  vRenderFileList();
+}
+
+function vRemoveFile(name){
+  vFiles = vFiles.filter(f=>f.name!==name);
+  vRenderFileList();
+  vRebuild();
+}
+
+function vRenderFileList(){
+  const el = document.getElementById("vFilelist");
+  el.innerHTML = "";
+  vFiles.forEach(f=>{
+    const chip = document.createElement("div");
+    chip.className = "filechip";
+    const warn = f.error ? `<span class="warn">${f.error}</span>` :
+      (f.shortCount ? `<span class="warn">${f.shortCount} línea(s) más corta(s) de lo esperado</span>` : `${f.records.length} registros`);
+    chip.innerHTML = `<b>${escapeHtml(f.name)}</b><span class="muted">&middot; ${warn}</span>`;
+    const btn = document.createElement("button");
+    btn.textContent = "×";
+    btn.title = "Quitar fichero";
+    btn.onclick = ()=> vRemoveFile(f.name);
+    chip.appendChild(btn);
+    el.appendChild(chip);
+  });
+}
+
+function vRebuild(){
+  vAllRecords = [];
+  vFiles.forEach(f=> vAllRecords.push(...f.records));
+  const hasData = vAllRecords.length>0;
+  document.getElementById("vBreakdownPanel").style.display = hasData ? "" : "none";
+  document.getElementById("vFiltersPanel").style.display = hasData ? "" : "none";
+  document.getElementById("vResultsPanel").style.display = hasData ? "" : "none";
+  document.getElementById("vStats").style.display = hasData ? "" : "none";
+  if(!hasData){ vRenderStats(); vRenderBreakdown(); vApplyFilters(); return; }
+  fillSelect("vMun", uniqueSorted(vAllRecords.map(r=>r.municipio)), v=>v);
+  fillSelect("vCauv", uniqueSorted(vAllRecords.map(r=>r.cauv).filter(Boolean)), v=>v+cauvLabel(v));
+  vRenderStats();
+  vRenderBreakdown();
+  vApplyFilters();
+}
+
+function vRenderStats(){
+  const el = document.getElementById("vStats");
+  el.innerHTML = `<div><b>${vFiles.length}</b> fichero(s)</div><div><b>${vAllRecords.length}</b> registros cargados</div>`;
+}
+
+const V_CVAR_LABELS = {A:"Altas", B:"Bajas", M:"Modificaciones"};
+function vRenderBreakdown(){
+  const el = document.getElementById("vBreakdown");
+  el.innerHTML = "";
+  const groups = {};
+  ["A","B","M",""].forEach(c=> groups[c] = {});
+  vAllRecords.forEach(r=>{
+    const key = r.cvar in groups ? r.cvar : "";
+    const causeKey = r.cauv || "(en blanco)";
+    groups[key][causeKey] = (groups[key][causeKey]||0) + 1;
+  });
+  ["A","B","M",""].forEach(cvar=>{
+    const causes = groups[cvar];
+    const total = Object.values(causes).reduce((a,b)=>a+b,0);
+    if(cvar==="" && total===0) return;
+    const card = document.createElement("div");
+    card.className = "bgroup";
+    const h3 = document.createElement("h3");
+    h3.textContent = (V_CVAR_LABELS[cvar] || "Sin CVAR / otro") + (cvar ? ` (${cvar})` : "");
+    h3.title = "Filtrar por " + (V_CVAR_LABELS[cvar] || "sin CVAR");
+    h3.addEventListener("click", ()=>{
+      document.getElementById("vCvar").value = cvar;
+      document.getElementById("vCauv").value = "";
+      vPage=1; vApplyFilters();
+    });
+    const totalDiv = document.createElement("div");
+    totalDiv.className = "total";
+    totalDiv.textContent = total;
+    const chips = document.createElement("div");
+    chips.className = "bchips";
+    Object.entries(causes).sort((a,b)=>b[1]-a[1]).forEach(([cauv,count])=>{
+      const chip = document.createElement("span");
+      chip.className = "bchip";
+      const label = cauv==="(en blanco)" ? cauv : cauv + cauvLabel(cauv);
+      chip.innerHTML = `<b>${count}</b> <span>${escapeHtml(label)}</span>`;
+      chip.addEventListener("click", ()=>{
+        document.getElementById("vCvar").value = cvar;
+        document.getElementById("vCauv").value = cauv==="(en blanco)" ? "" : cauv;
+        vPage=1; vApplyFilters();
+      });
+      chips.appendChild(chip);
+    });
+    card.appendChild(h3); card.appendChild(totalDiv); card.appendChild(chips);
+    el.appendChild(card);
+  });
+}
+
+["vSearch","vMun","vCvar","vCauv"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", ()=>{ vPage=1; vApplyFilters(); });
+  document.getElementById(id).addEventListener("change", ()=>{ vPage=1; vApplyFilters(); });
+});
+
+function vApplyFilters(){
+  const q = document.getElementById("vSearch").value.trim().toLowerCase();
+  const mun = document.getElementById("vMun").value;
+  const cvar = document.getElementById("vCvar").value;
+  const cauv = document.getElementById("vCauv").value;
+  vFiltered = vAllRecords.filter(r=>{
+    if(mun && r.municipio!==mun) return false;
+    if(cvar && r.cvar!==cvar) return false;
+    if(cauv && r.cauv!==cauv) return false;
+    if(q){
+      const hay = (r.nombre+" "+r.doc+" "+r.nia).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  vRenderTable();
+}
+
+function vRenderTable(){
+  const tbody = document.getElementById("vTbody");
+  tbody.innerHTML = "";
+  document.getElementById("vEmptyMsg").style.display = vFiltered.length ? "none" : "";
+  document.getElementById("vFilteredCount").textContent = vFiltered.length + " registros";
+  document.getElementById("vSelectedCount").textContent = vAllRecords.filter(r=>r.selected).length + " seleccionados";
+
+  const totalPages = Math.max(1, Math.ceil(vFiltered.length / V_PAGE_SIZE));
+  if(vPage>totalPages) vPage = totalPages;
+  const start = (vPage-1)*V_PAGE_SIZE;
+  const pageItems = vFiltered.slice(start, start+V_PAGE_SIZE);
+
+  pageItems.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.className = r.selected ? "sel" : "";
+    const cvarPill = r.cvar ? `<span class="pill pill-${r.cvar}">${r.cvar}</span>` : "";
+    tr.innerHTML = `
+      <td><input type="checkbox" class="rowchk" ${r.selected?"checked":""}></td>
+      <td class="mono">${escapeHtml(r.municipio)}</td>
+      <td class="name-cell">${escapeHtml(r.nombre)||'<span class="muted">(sin nombre)</span>'}</td>
+      <td class="mono">${escapeHtml(r.nia)}</td>
+      <td class="mono">${escapeHtml(r.doc)}</td>
+      <td>${cvarPill}</td>
+      <td class="mono">${escapeHtml(r.cauv)}</td>
+      <td class="mono">${formatFecha(r.fvar)}</td>
+      <td class="muted" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.source)}">${escapeHtml(r.source)}</td>
+    `;
+    tr.querySelector(".rowchk").addEventListener("change", e=>{
+      r.selected = e.target.checked;
+      tr.classList.toggle("sel", r.selected);
+      document.getElementById("vSelectedCount").textContent = vAllRecords.filter(x=>x.selected).length + " seleccionados";
+    });
+    tbody.appendChild(tr);
+  });
+
+  vRenderPager(totalPages);
+}
+
+function vRenderPager(totalPages){
+  const el = document.getElementById("vPager");
+  if(totalPages<=1){ el.innerHTML=""; return; }
+  el.innerHTML = "";
+  const mkBtn = (label, disabled, fn)=>{
+    const b = document.createElement("button");
+    b.className="btn"; b.textContent=label; b.disabled=disabled;
+    b.onclick=fn; return b;
+  };
+  el.appendChild(mkBtn("‹ Anterior", vPage<=1, ()=>{ vPage--; vRenderTable(); }));
+  const span = document.createElement("span");
+  span.textContent = `Página ${vPage} de ${totalPages}`;
+  el.appendChild(span);
+  el.appendChild(mkBtn("Siguiente ›", vPage>=totalPages, ()=>{ vPage++; vRenderTable(); }));
+}
+
+document.getElementById("vBtnSelAll").addEventListener("click", ()=>{
+  vFiltered.forEach(r=> r.selected = true);
+  vRenderTable();
+});
+document.getElementById("vBtnSelNone").addEventListener("click", ()=>{
+  vAllRecords.forEach(r=> r.selected = false);
+  vRenderTable();
+});
+
+document.getElementById("vBtnExport").addEventListener("click", ()=>{
+  const selected = vAllRecords.filter(r=>r.selected);
+  if(!selected.length){ alert("No hay ningún registro seleccionado."); return; }
+  const useCRLF = document.getElementById("vOutCRLF").checked;
+  const eol = useCRLF ? "\r\n" : "\n";
+  const body = selected.map(r=>r.raw).join(eol) + eol;
+  let name = document.getElementById("vOutName").value.trim();
+  if(!name) name = vSuggestName(selected);
+  const blob = new Blob([body], {type:"text/plain;charset=iso-8859-15"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+function vSuggestName(selected){
+  const muns = uniqueSorted(selected.map(r=>r.municipio));
+  if(muns.length===1){
+    const [cpro,cmun] = muns[0].split("-");
+    return `H${cpro}${cmun}_variaciones_seleccion.txt`;
+  }
+  return "variaciones_seleccion.txt";
+}
+document.getElementById("vOutName").addEventListener("focus", function(){
+  if(!this.value){
+    const selected = vAllRecords.filter(r=>r.selected);
+    this.value = selected.length ? vSuggestName(selected) : "";
+  }
+});
+
+vRebuild();
+
+/* ================== Pestañas ================== */
+function switchTab(name){
+  document.getElementById("tabErrores").style.display = name==="errores" ? "" : "none";
+  document.getElementById("tabVariaciones").style.display = name==="variaciones" ? "" : "none";
+  document.getElementById("tabBtnErrores").classList.toggle("active", name==="errores");
+  document.getElementById("tabBtnVariaciones").classList.toggle("active", name==="variaciones");
+}
+document.getElementById("tabBtnErrores").addEventListener("click", ()=> switchTab("errores"));
+document.getElementById("tabBtnVariaciones").addEventListener("click", ()=> switchTab("variaciones"));
 </script>
 </body>
 </html>

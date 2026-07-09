@@ -1,10 +1,13 @@
-# Filtro de errores/incidencias INE — Padrón
+# Padrón INE — errores y variaciones
 
 Aplicación web de un único fichero HTML (sin instalación, sin dependencias, sin conexión a
-internet) para trabajar con los ficheros de devolución mensual del INE de la **Relación de
-Habitantes** (`H*.A??`, formato INE-Ayuntamientos).
+internet) para trabajar con los ficheros de intercambio INE-Ayuntamientos de la **Relación de
+Habitantes**. Tiene dos pestañas independientes:
 
-Permite:
+### 📥 Fichero de errores/incidencias (recibido del INE)
+
+Para los ficheros de devolución mensual del INE (`H*.A??`, 704 caracteres por registro: 554 de
+datos + 150 de cola de errores). Permite:
 
 1. Cargar varios ficheros de errores/incidencias del INE a la vez (arrastrar y soltar, o
    selector de ficheros).
@@ -15,8 +18,27 @@ Permite:
    para el Ayuntamiento.
 3. Seleccionar manualmente (o por lote, tras filtrar) los registros que interesa tratar.
 4. Generar y descargar un fichero de salida con la **misma estructura** que el original
-   (704 caracteres por línea: 554 de datos + 150 de cola de errores), conteniendo únicamente
-   las líneas seleccionadas, listo para cargar en el programa de gestión de Padrón.
+   (704 caracteres por línea), conteniendo únicamente las líneas seleccionadas, listo para
+   cargar en el programa de gestión de Padrón.
+
+### 📤 Fichero de variaciones (a enviar al INE)
+
+Para el fichero de variaciones que el Ayuntamiento envía al INE (mismo diseño de registro,
+pero sin cola de errores: 554 caracteres por registro). Permite:
+
+1. Cargar uno o varios ficheros de variaciones.
+2. Ver de un vistazo cuántas Altas, Bajas y Modificaciones hay, desglosadas por causa de
+   variación (`CAUV`: alta por nacimiento, baja por defunción, cambio de domicilio&hellip;),
+   con contadores clicables que aplican el filtro correspondiente al instante.
+3. Filtrar por municipio, `CVAR`, `CAUV` o texto libre, y seleccionar manualmente o por lote
+   los registros que interesa tratar.
+4. Generar y descargar un fichero de salida con la misma estructura (554 caracteres por línea)
+   conteniendo solo los registros seleccionados.
+
+Ambas pestañas comparten el motor de lectura/escritura del fichero, así que si cargas por
+error un fichero con cola en la pestaña de variaciones simplemente se ignora esa cola (no
+pasa nada), y si cargas un fichero sin cola en la de errores se trata como si no tuviera
+ninguna incidencia marcada.
 
 ## Cómo usarlo
 
