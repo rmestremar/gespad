@@ -207,6 +207,7 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
       <div class="right">
         <button class="btn" id="btnSelAll">Seleccionar todo lo filtrado</button>
         <button class="btn" id="btnSelNone">Vaciar selección</button>
+        <button class="btn" id="btnExcel">📊 Exportar a Excel</button>
       </div>
     </div>
     <div class="tablewrap">
@@ -301,6 +302,7 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
         <div class="right">
           <button class="btn" id="vBtnSelAll">Seleccionar todo lo filtrado</button>
           <button class="btn" id="vBtnSelNone">Vaciar selección</button>
+          <button class="btn" id="vBtnExcel">📊 Exportar a Excel</button>
         </div>
       </div>
       <div class="tablewrap">
@@ -517,6 +519,71 @@ function renderFileList(){
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- Exportación a Excel (SpreadsheetML, sin librerías externas) ---------- */
+function excelCell(text, styleId){
+  const escaped = escapeHtml(text==null?"":String(text)).replace(/\n/g, "&#10;");
+  return `<Cell${styleId?` ss:StyleID="${styleId}"`:""}><Data ss:Type="String">${escaped}</Data></Cell>`;
+}
+function buildExcelWorkbook(sheetName, columns, rows){
+  const cols = columns.map(c=>`<Column ss:Width="${c.width}"/>`).join("");
+  const header = `<Row ss:AutoFitHeight="0">` + columns.map(c=>excelCell(c.label,"Header")).join("") + `</Row>`;
+  const body = rows.map(row=>`<Row>` + row.map(v=>excelCell(v,"Cell")).join("") + `</Row>`).join("");
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1"/>
+   <Interior ss:Color="#DDE8FD" ss:Pattern="Solid"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders>
+   <Alignment ss:Vertical="Bottom" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="Cell">
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#DDDDDD"/></Borders>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="${escapeHtml(sheetName)}">
+  <Table>${cols}
+${header}${body}
+  </Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+   <PageSetup>
+    <Layout x:Orientation="Landscape"/>
+    <PageMargins x:Bottom="0.75" x:Left="0.5" x:Right="0.5" x:Top="0.75"/>
+   </PageSetup>
+   <FitToPage/>
+   <Print>
+    <FitWidth>1</FitWidth>
+    <FitHeight>0</FitHeight>
+    <ValidPrinterInfo/>
+   </Print>
+   <Selected/>
+   <Panes>
+    <Pane>
+     <Number>3</Number>
+     <ActiveRow>1</ActiveRow>
+    </Pane>
+   </Panes>
+   <ProtectObjects>False</ProtectObjects>
+   <ProtectScenarios>False</ProtectScenarios>
+  </WorksheetOptions>
+ </Worksheet>
+</Workbook>`;
+}
+function downloadExcel(sheetName, columns, rows, filename){
+  const xml = buildExcelWorkbook(sheetName, columns, rows);
+  const blob = new Blob(["﻿"+xml], {type:"application/vnd.ms-excel;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /* ---------- Reconstrucción de índices / selects tras cargar ---------- */
@@ -806,6 +873,31 @@ document.getElementById("outName").addEventListener("focus", function(){
   }
 });
 
+document.getElementById("btnExcel").addEventListener("click", ()=>{
+  const selected = allRecords.filter(r=>r.selected);
+  const rows = (selected.length ? selected : filtered);
+  if(!rows.length){ alert("No hay registros que exportar (ni seleccionados ni filtrados)."); return; }
+  const columns = [
+    {label:"Municipio", width:60}, {label:"Nombre y apellidos", width:190}, {label:"NIA", width:100},
+    {label:"Documento", width:90}, {label:"CVAR", width:40}, {label:"CAUV", width:120},
+    {label:"FVAR", width:70}, {label:"Tipo", width:35}, {label:"CDEV", width:100},
+    {label:"Incidencias", width:320}, {label:"Fichero", width:150}
+  ];
+  const data = rows.map(r=>{
+    const incidencias = r.codes.map(c=>{
+      const v = codeVariant(c.code, r.cdev);
+      return v ? `#${c.code} (${v.cdev||"?"}) — ${v.desc}` : `#${c.code}`;
+    }).join("\n");
+    return [
+      r.municipio, r.nombre, r.nia, r.doc, r.cvar, r.cauv+cauvLabel(r.cauv),
+      formatFecha(r.fvar), r.tipoinf, r.cdev+cdevLabel(r.cdev), incidencias, r.source
+    ];
+  });
+  const muns = uniqueSorted(rows.map(r=>r.municipio));
+  const base = muns.length===1 ? `H${muns[0].replace("-","")}` : "padron";
+  downloadExcel("Errores INE", columns, data, `${base}_errores_${selected.length?"seleccion":"filtrado"}.xls`);
+});
+
 rebuild();
 
 /* ================== Fichero de variaciones (sin cola de errores) ================== */
@@ -1063,6 +1155,23 @@ document.getElementById("vOutName").addEventListener("focus", function(){
     const selected = vAllRecords.filter(r=>r.selected);
     this.value = selected.length ? vSuggestName(selected) : "";
   }
+});
+
+document.getElementById("vBtnExcel").addEventListener("click", ()=>{
+  const selected = vAllRecords.filter(r=>r.selected);
+  const rows = (selected.length ? selected : vFiltered);
+  if(!rows.length){ alert("No hay registros que exportar (ni seleccionados ni filtrados)."); return; }
+  const columns = [
+    {label:"Municipio", width:60}, {label:"Nombre y apellidos", width:190}, {label:"NIA", width:100},
+    {label:"Documento", width:90}, {label:"CVAR", width:40}, {label:"CAUV", width:150},
+    {label:"FVAR", width:70}, {label:"Fichero", width:150}
+  ];
+  const data = rows.map(r=>[
+    r.municipio, r.nombre, r.nia, r.doc, r.cvar, r.cauv+cauvLabel(r.cauv), formatFecha(r.fvar), r.source
+  ]);
+  const muns = uniqueSorted(rows.map(r=>r.municipio));
+  const base = muns.length===1 ? `H${muns[0].replace("-","")}` : "padron";
+  downloadExcel("Variaciones", columns, data, `${base}_variaciones_${selected.length?"seleccion":"filtrado"}.xls`);
 });
 
 vRebuild();

@@ -40,6 +40,17 @@ error un fichero con cola en la pestaña de variaciones simplemente se ignora es
 pasa nada), y si cargas un fichero sin cola en la de errores se trata como si no tuviera
 ninguna incidencia marcada.
 
+### 📊 Exportar a Excel
+
+Además del fichero de salida en formato INE (para recargar en el programa de padrón), cada
+pestaña tiene un botón **"Exportar a Excel"** que genera un `.xls` legible con columnas,
+cabecera en negrita y ajustado para imprimir en horizontal — pensado para revisar en pantalla
+o imprimir en papel, no para recargarlo en el INE. Exporta la selección actual si has marcado
+registros, o todos los que estén filtrados si no has marcado ninguno. Al abrirlo, Excel puede
+mostrar un aviso de que el contenido no coincide exactamente con la extensión del archivo; es
+normal (es el formato "XML Spreadsheet 2003", que Excel sigue soportando de forma nativa) y
+basta con aceptar para abrirlo con normalidad.
+
 ## Cómo usarlo
 
 Abre `index.html` con doble clic (se abre en tu navegador habitual). No requiere instalar
