@@ -40,6 +40,27 @@ error un fichero con cola en la pestaña de variaciones simplemente se ignora es
 pasa nada), y si cargas un fichero sin cola en la de errores se trata como si no tuviera
 ninguna incidencia marcada.
 
+### 🔍 Detalle por registro (procedencia/destino y cambios)
+
+Al hacer clic en una fila (en cualquiera de las dos pestañas) se despliega un detalle con
+información que no cabe en la tabla:
+
+- **Procedencia/Destino**: si el registro tiene contenido en `PRDP`/`MUDP` (cambios de
+  residencia, `CAUV=CR`), se muestra el código de provincia-municipio de origen (en las Altas)
+  o de destino (en las Bajas), indicando si es el extranjero y el consulado si aplica. También
+  aparece como columna en la propia tabla para verlo sin desplegar nada.
+- **Cambios respecto a los datos iniciales** (solo en Modificaciones, `CVAR=M`): compara los
+  "datos iniciales" y los "datos tras variación" del propio registro y lista qué campos
+  difieren (nombre, apellidos, fecha y lugar de nacimiento, documento, NIA, NIE), con el valor
+  antes y después. *Importante*: el domicilio, sexo, nacionalidad y nivel de estudios solo
+  figuran en este fichero con su valor final — el diseño de registro del INE no incluye el
+  valor anterior de esos campos, así que no se puede mostrar como "cambio", solo el resultado.
+- **Domicilio tras la variación** y otros datos finales (sexo, nacionalidad, nivel de
+  estudios), cuando el registro los trae.
+
+Esta misma información se incluye también en la exportación a Excel, en las columnas
+"Procedencia/Destino", "Cambios (modificación)" y "Domicilio".
+
 ### 📊 Exportar a Excel
 
 Además del fichero de salida en formato INE (para recargar en el programa de padrón), cada

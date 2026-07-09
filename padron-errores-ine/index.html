@@ -222,6 +222,7 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
             <th>CVAR</th>
             <th>CAUV</th>
             <th>FVAR</th>
+            <th>Procedencia/Destino</th>
             <th>Tipo</th>
             <th>CDEV</th>
             <th>Incidencias</th>
@@ -317,6 +318,7 @@ footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
               <th>CVAR</th>
               <th>CAUV</th>
               <th>FVAR</th>
+              <th>Procedencia/Destino</th>
               <th>Fichero</th>
             </tr>
           </thead>
@@ -425,6 +427,91 @@ function pickDoc(tiden,lextr,iden,liden,ndocu){
 function formatFecha(v){
   if(!v || v.length!==8 || !/^\d{8}$/.test(v)) return v || "";
   return v.substr(6,2)+"/"+v.substr(4,2)+"/"+v.substr(0,4);
+}
+
+/* ---------- Procedencia/destino, domicilio y diferencias en modificaciones ---------- */
+function fmtMunCode(p, m){
+  p=(p||"").trim(); m=(m||"").trim();
+  if(!p && !m) return "";
+  return (p||"--")+"-"+(m||"---");
+}
+function procedenciaDestino(r){
+  const f = r.f;
+  const prdp = f.PRDP.trim(), mudp = f.MUDP.trim(), codp = f.CODP.trim();
+  const hasPrdp = prdp && prdp!=="00";
+  const hasMudp = mudp && mudp!=="000";
+  if(!hasPrdp && !hasMudp) return "";
+  let val = fmtMunCode(prdp, mudp);
+  if(prdp==="66") val += " (extranjero)";
+  if(codp && codp!=="000") val += " · Consulado "+codp;
+  return val;
+}
+function procedenciaDestinoLabel(r){
+  if(r.cvar==="A") return "Procedencia";
+  if(r.cvar==="B") return "Destino";
+  return "Procedencia/Destino";
+}
+function buildDomicilioText(f){
+  const parts = [];
+  const tvia=f.TVIA.trim(), nviac=f.NVIAC.trim(), dpsvia=f.DPSVIA.trim();
+  if(tvia || nviac) parts.push([tvia,nviac].filter(Boolean).join(" "));
+  else if(dpsvia) parts.push(dpsvia);
+  const numer=f.NUMER.trim().replace(/^0+(?=\d)/,""), cnumer=f.CNUMER.trim();
+  if(numer && numer!=="0") parts.push("nº "+numer+cnumer);
+  const detalle = [];
+  if(f.BLOQ.trim()) detalle.push("Bloque "+f.BLOQ.trim());
+  if(f.PORT.trim()) detalle.push("Portal "+f.PORT.trim());
+  if(f.ESCA.trim()) detalle.push("Esc. "+f.ESCA.trim());
+  if(f.PLAN.trim()) detalle.push("Planta "+f.PLAN.trim());
+  if(f.PUER.trim()) detalle.push("Puerta "+f.PUER.trim());
+  if(detalle.length) parts.push(detalle.join(", "));
+  const dist=f.DIST.trim(), secc=f.SECC.trim(), lsecc=f.LSECC.trim();
+  if(dist || secc) parts.push("Distrito "+dist+" · Sección "+secc+lsecc);
+  return parts.filter(Boolean).join(" · ");
+}
+function buildModificationDiffs(f){
+  const diffs = [];
+  const pushDiff = (label, before, after) => {
+    before=(before||"").trim(); after=(after||"").trim();
+    if(before && after && before!==after) diffs.push([label, before, after]);
+  };
+  pushDiff("Nombre", f.NOMB_id, f.NOMB_var);
+  pushDiff("Primer apellido", [f.PART1_id,f.APE1_id].map(s=>s.trim()).filter(Boolean).join(" "), [f.PART1_var,f.APE1_var].map(s=>s.trim()).filter(Boolean).join(" "));
+  pushDiff("Segundo apellido", [f.PART2_id,f.APE2_id].map(s=>s.trim()).filter(Boolean).join(" "), [f.PART2_var,f.APE2_var].map(s=>s.trim()).filter(Boolean).join(" "));
+  pushDiff("Fecha de nacimiento", formatFecha(f.FNAC_id.trim()), formatFecha(f.FNAC_var.trim()));
+  pushDiff("Lugar de nacimiento", fmtMunCode(f.CPRON_id,f.CMUNN_id), fmtMunCode(f.CPRON_var,f.CMUNN_var));
+  pushDiff("Documento", pickDoc(f.TIDEN_id,f.LEXTR_id,f.IDEN_id,f.LIDEN_id,f.NDOCU_id), pickDoc(f.TIDEN_var,f.LEXTR_var,f.IDEN_var,f.LIDEN_var,f.NDOCU_var));
+  pushDiff("NIA", f.NIA_id, f.NIA_var);
+  pushDiff("NIE", f.NIE_id, f.NIE_var);
+  return diffs;
+}
+const SEXO_LABELS = {"1":"Varón","6":"Mujer"};
+function buildRecordDetailHtml(r){
+  const f = r.f;
+  let html = "";
+  const procDest = procedenciaDestino(r);
+  if(procDest){
+    html += `<div class="detail-code"><div class="hd">${escapeHtml(procedenciaDestinoLabel(r))}</div><div class="accion">${escapeHtml(procDest)}</div></div>`;
+  }
+  if(r.cvar==="M"){
+    const diffs = buildModificationDiffs(f);
+    if(diffs.length){
+      html += `<div class="detail-code"><div class="hd">Cambia respecto a los datos iniciales</div><div class="accion">` +
+        diffs.map(([l,b,a])=>`${escapeHtml(l)}: ${escapeHtml(b)} &rarr; ${escapeHtml(a)}`).join("<br>") +
+        `</div></div>`;
+    } else {
+      html += `<div class="detail-code"><div class="hd">Cambia respecto a los datos iniciales</div><div class="accion">Sin diferencias en nombre, apellidos, nacimiento, documento, NIA o NIE. El domicilio, sexo, nivel de estudios y nacionalidad solo figuran con su valor final en este fichero (no incluye el valor anterior).</div></div>`;
+    }
+  }
+  const domicilio = buildDomicilioText(f);
+  if(domicilio) html += `<div class="detail-code"><div class="hd">Domicilio (tras la variación)</div><div class="accion">${escapeHtml(domicilio)}</div></div>`;
+  const extra = [];
+  const sexo = f.SEXO.trim();
+  if(sexo) extra.push("Sexo: "+(SEXO_LABELS[sexo]||sexo));
+  if(f.NACI.trim()) extra.push("Nacionalidad (código): "+f.NACI.trim());
+  if(f.CNES.trim()) extra.push("Nivel de estudios (código): "+f.CNES.trim());
+  if(extra.length) html += `<div class="detail-code"><div class="hd">Otros datos tras la variación</div><div class="accion">${extra.map(escapeHtml).join(" · ")}</div></div>`;
+  return html;
 }
 function codeVariant(code, recordCdev){
   const variants = ERROR_CATALOG[String(code)];
@@ -770,6 +857,7 @@ function renderTable(){
       <td>${cvarPill}</td>
       <td class="mono">${escapeHtml(r.cauv)}</td>
       <td class="mono">${formatFecha(r.fvar)}</td>
+      <td class="mono">${escapeHtml(procedenciaDestino(r))}</td>
       <td class="mono">${escapeHtml(r.tipoinf)}</td>
       <td class="mono">${escapeHtml(r.cdev)}</td>
       <td>${codesHtml}</td>
@@ -780,7 +868,7 @@ function renderTable(){
       tr.classList.toggle("sel", r.selected);
       document.getElementById("selectedCount").textContent = allRecords.filter(x=>x.selected).length + " seleccionados";
     });
-    if(r.codes.length){
+    if(hasDetail(r)){
       tr.style.cursor = "pointer";
       tr.addEventListener("click", e=>{
         if(e.target.type==="checkbox") return;
@@ -793,6 +881,11 @@ function renderTable(){
   renderPager(totalPages);
 }
 
+function hasDetail(r){
+  return r.codes.length>0 || !!procedenciaDestino(r) || r.cvar==="M" || !!buildDomicilioText(r.f) ||
+    !!(r.f.SEXO.trim()||r.f.NACI.trim()||r.f.CNES.trim());
+}
+
 function toggleDetail(r, tr){
   const next = tr.nextSibling;
   if(next && next.classList && next.classList.contains("rowdetail")){
@@ -803,8 +896,8 @@ function toggleDetail(r, tr){
   const detail = document.createElement("tr");
   detail.className = "rowdetail";
   const td = document.createElement("td");
-  td.colSpan = 12;
-  td.innerHTML = r.codes.map(c=>{
+  td.colSpan = 13;
+  const codesDetail = r.codes.map(c=>{
     const v = codeVariant(c.code, r.cdev);
     if(!v) return `<div class="detail-code"><div class="hd">#${c.code} ${c.marker!=='X'?'('+c.marker+')':''}</div><div class="accion">Sin descripción en el catálogo cargado.</div></div>`;
     return `<div class="detail-code">
@@ -812,6 +905,7 @@ function toggleDetail(r, tr){
       ${v.accion?`<div class="accion">Actuación: ${escapeHtml(v.accion)}${v.rechazable?` &middot; Rechazable: ${v.rechazable}`:""}${v.afecta_cifras?` &middot; Afecta a cifras: ${v.afecta_cifras}`:""}</div>`:""}
     </div>`;
   }).join("");
+  td.innerHTML = codesDetail + buildRecordDetailHtml(r);
   detail.appendChild(td);
   tr.parentNode.insertBefore(detail, tr.nextSibling);
 }
@@ -880,17 +974,18 @@ document.getElementById("btnExcel").addEventListener("click", ()=>{
   const columns = [
     {label:"Municipio", width:60}, {label:"Nombre y apellidos", width:190}, {label:"NIA", width:100},
     {label:"Documento", width:90}, {label:"CVAR", width:40}, {label:"CAUV", width:120},
-    {label:"FVAR", width:70}, {label:"Tipo", width:35}, {label:"CDEV", width:100},
-    {label:"Incidencias", width:320}, {label:"Fichero", width:150}
+    {label:"FVAR", width:70}, {label:"Procedencia/Destino", width:110}, {label:"Tipo", width:35}, {label:"CDEV", width:100},
+    {label:"Incidencias", width:320}, {label:"Cambios (modificación)", width:260}, {label:"Domicilio", width:220}, {label:"Fichero", width:150}
   ];
   const data = rows.map(r=>{
     const incidencias = r.codes.map(c=>{
       const v = codeVariant(c.code, r.cdev);
       return v ? `#${c.code} (${v.cdev||"?"}) — ${v.desc}` : `#${c.code}`;
     }).join("\n");
+    const cambios = r.cvar==="M" ? buildModificationDiffs(r.f).map(([l,b,a])=>`${l}: ${b} → ${a}`).join("\n") : "";
     return [
       r.municipio, r.nombre, r.nia, r.doc, r.cvar, r.cauv+cauvLabel(r.cauv),
-      formatFecha(r.fvar), r.tipoinf, r.cdev+cdevLabel(r.cdev), incidencias, r.source
+      formatFecha(r.fvar), procedenciaDestino(r), r.tipoinf, r.cdev+cdevLabel(r.cdev), incidencias, cambios, buildDomicilioText(r.f), r.source
     ];
   });
   const muns = uniqueSorted(rows.map(r=>r.municipio));
@@ -1089,6 +1184,7 @@ function vRenderTable(){
       <td>${cvarPill}</td>
       <td class="mono">${escapeHtml(r.cauv)}</td>
       <td class="mono">${formatFecha(r.fvar)}</td>
+      <td class="mono">${escapeHtml(procedenciaDestino(r))}</td>
       <td class="muted" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.source)}">${escapeHtml(r.source)}</td>
     `;
     tr.querySelector(".rowchk").addEventListener("change", e=>{
@@ -1096,10 +1192,33 @@ function vRenderTable(){
       tr.classList.toggle("sel", r.selected);
       document.getElementById("vSelectedCount").textContent = vAllRecords.filter(x=>x.selected).length + " seleccionados";
     });
+    if(hasDetail(r)){
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", e=>{
+        if(e.target.type==="checkbox") return;
+        vToggleDetail(r, tr);
+      });
+    }
     tbody.appendChild(tr);
   });
 
   vRenderPager(totalPages);
+}
+
+function vToggleDetail(r, tr){
+  const next = tr.nextSibling;
+  if(next && next.classList && next.classList.contains("rowdetail")){
+    next.remove();
+    return;
+  }
+  document.querySelectorAll(".rowdetail").forEach(n=>n.remove());
+  const detail = document.createElement("tr");
+  detail.className = "rowdetail";
+  const td = document.createElement("td");
+  td.colSpan = 10;
+  td.innerHTML = buildRecordDetailHtml(r) || '<span class="muted">Sin datos adicionales.</span>';
+  detail.appendChild(td);
+  tr.parentNode.insertBefore(detail, tr.nextSibling);
 }
 
 function vRenderPager(totalPages){
@@ -1164,11 +1283,16 @@ document.getElementById("vBtnExcel").addEventListener("click", ()=>{
   const columns = [
     {label:"Municipio", width:60}, {label:"Nombre y apellidos", width:190}, {label:"NIA", width:100},
     {label:"Documento", width:90}, {label:"CVAR", width:40}, {label:"CAUV", width:150},
-    {label:"FVAR", width:70}, {label:"Fichero", width:150}
+    {label:"FVAR", width:70}, {label:"Procedencia/Destino", width:110}, {label:"Cambios (modificación)", width:260},
+    {label:"Domicilio", width:220}, {label:"Fichero", width:150}
   ];
-  const data = rows.map(r=>[
-    r.municipio, r.nombre, r.nia, r.doc, r.cvar, r.cauv+cauvLabel(r.cauv), formatFecha(r.fvar), r.source
-  ]);
+  const data = rows.map(r=>{
+    const cambios = r.cvar==="M" ? buildModificationDiffs(r.f).map(([l,b,a])=>`${l}: ${b} → ${a}`).join("\n") : "";
+    return [
+      r.municipio, r.nombre, r.nia, r.doc, r.cvar, r.cauv+cauvLabel(r.cauv), formatFecha(r.fvar),
+      procedenciaDestino(r), cambios, buildDomicilioText(r.f), r.source
+    ];
+  });
   const muns = uniqueSorted(rows.map(r=>r.municipio));
   const base = muns.length===1 ? `H${muns[0].replace("-","")}` : "padron";
   downloadExcel("Variaciones", columns, data, `${base}_variaciones_${selected.length?"seleccion":"filtrado"}.xls`);
